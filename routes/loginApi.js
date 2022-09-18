@@ -21,7 +21,7 @@ router.post('/', (req, res, next) => {
             res.send('not found');
         } else {
             const type = result[0]['type'];
-            jwt.sign({ user }, 'khqes$30450#$%1234#900$!', (err, token) => {
+            jwt.sign({ user, type }, 'khqes$30450#$%1234#900$!', (err, token) => {
                 res.json({
                     token,
                     type
