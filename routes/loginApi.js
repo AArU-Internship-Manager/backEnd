@@ -20,11 +20,15 @@ router.post('/', (req, res, next) => {
             res.status(404);
             res.send('not found');
         } else {
+
             const type = result[0]['type'];
             jwt.sign({ user, type }, 'khqes$30450#$%1234#900$!', (err, token) => {
+
                 res.json({
-                    token,
-                    type
+                    accessToken,
+                    role,
+                    username,
+                    ability
                 })
             })
 
