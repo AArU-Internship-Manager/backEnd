@@ -20,13 +20,10 @@ router.post('/', (req, res, next) => {
             res.status(404);
             res.send('not found');
         } else {
-            const role = result[0]['type'].toLowerCase();
-            const username = result[0]['username'];
-            const ability = [{
-                "action": "manage",
-                "subject": "all"
-            }]
-            jwt.sign({ user }, 'khqes$30450#$%1234#900$!', (err, accessToken) => {
+
+            const type = result[0]['type'];
+            jwt.sign({ user, type }, 'khqes$30450#$%1234#900$!', (err, token) => {
+
                 res.json({
                     accessToken,
                     role,
