@@ -17,7 +17,7 @@ router.use(verifyToken);
 router.post('/', (req, res, next) => {
     const { full_name,	nationality, university_id,	collage, study_field, birth_place, gender,	passport_end_date, phone, email, birth_date, location, passport_id, Section, Scientific_level, health_status, study_year ,	total_study_year, fluency_in_English, total_hour } = req.body;
 
-    const sql = `INSERT INTO student_e VALUES('${ID}', '${full_name}', '${nationality}', '${university_id}', '${collage}', '${study_field}', '${birth_place}', '${gender}', '${passport_end_date}', '${phone}', '${email}', '${birth_date}', '${location}', '${passport_id}', '${Section}', '${Scientific_level}', '${health_status}', '${study_year}', '${total_study_year}', '${fluency_in_English}', '${total_hour}')`;
+    const sql = `INSERT INTO student_e VALUES('${full_name}', '${nationality}', '${university_id}', '${collage}', '${study_field}', '${birth_place}', '${gender}', '${passport_end_date}', '${phone}', '${email}', '${birth_date}', '${location}', '${passport_id}', '${Section}', '${Scientific_level}', '${health_status}', '${study_year}', '${total_study_year}', '${fluency_in_English}', '${total_hour}')`;
     pool.query(sql, (err, result) => {
         if (err) {
             res.status(404);
