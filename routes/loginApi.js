@@ -14,17 +14,19 @@ router.post('/', (req, res, next) => {
     const name = req.body.Username;
     const password = req.body.password;
     const user = req.body.Username;
-    const sql = "select type ,username from `user` where `Username`='" + name + "' and `password`='" + password + "'";
+    const sql = "select type ,username,id from `user` where `Username`='" + name + "' and `password`='" + password + "'";
     pool.query(sql, (err, result) => {
         if (err || result.length === 0) {
             res.status(404);
             res.send('not found');
         } else {
             const type = result[0]['type'];
-            jwt.sign({ user, type }, 'khqes$30450#$%1234#900$!', (err, token) => {
+            const id = result[0]['id'];
+            jwt.sign({ user, type, id }, 'khqes$30450#$%1234#900$!', (err, token) => {
                 res.json({
                     token,
-                    type
+                    type,
+
                 })
             })
 
