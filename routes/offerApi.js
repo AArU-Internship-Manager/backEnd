@@ -33,34 +33,34 @@ router.get('/AutoComplete', (req, res) => {
 
 router.post('/', (req, res, next) => {
     const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`
-    console.log(sql1)
     pool.query(sql1, (err, result) => {
         if (err) {
             res.status(404);
             res.send(err);
         } else {
             university_id_src = result[0]['university_id']
+            const { offer_date, requirement, work_description, work_type, start_date, end_date, Financial_support, offer_dead_line, University_id_des, organization_id, user_id, work_address, work_day, weekly_hours, daily_hours, collage, department, major, student_level, gender, work_field, provide_food, provide_dorm, provide_transportation, status } = req.body;
+
+            const sql = `INSERT INTO offer (offer_date, university_id_src,requirement, work_description, work_type, start_date,end_date,Financial_support, offer_dead_line,	University_id_des, organization_id,	user_id, work_address, work_day, weekly_hours, daily_hours,collage, department, major, student_level, gender, work_field, status,provide_food, provide_dorm, provide_transportation)
+             VALUES ("${offer_date}", ${university_id_src}, "${requirement}", "${work_description}", "${work_type}",
+              "${start_date}", "${end_date}", "${Financial_support}", "${offer_dead_line}", ${University_id_des}, 
+              ${organization_id}, ${user_id}, "${work_address}", "${work_day}", ${weekly_hours}, ${daily_hours},
+              "${collage}", "${department}", "${major}", "${student_level}","${gender}", "${work_field}", "${status}",
+              "${provide_food}", "${provide_dorm}", "${provide_transportation}")`;
+
+            pool.query(sql, (err, result) => {
+                if (err) {
+                    res.status(404);
+                    res.send(err);
+                } else {
+                    res.status(200);
+                    res.send("ur data insert")
+                }
+            })
 
         }
     })
-    const { offer_date, requirement, work_description, work_type, start_date, end_date, Financial_support, offer_dead_line, University_id_des, organization_id, user_id, work_address, work_day, weekly_hours, daily_hours, collage, department, major, student_level, gender, work_field, provide_food, provide_dorm, provide_transportation, status } = req.body;
 
-    const sql = `INSERT INTO offer (offer_date, university_id_src,requirement, work_description, work_type, start_date,end_date,Financial_support, offer_dead_line,	University_id_des, organization_id,	user_id, work_address, work_day, weekly_hours, daily_hours,collage, department, major, student_level, gender, work_field, status,provide_food, provide_dorm, provide_transportation)
-     VALUES ("${offer_date}", ${university_id_src}, "${requirement}", "${work_description}", "${work_type}",
-      "${start_date}", "${end_date}", "${Financial_support}", "${offer_dead_line}", ${University_id_des}, 
-      ${organization_id}, ${user_id}, "${work_address}", "${work_day}", ${weekly_hours}, ${daily_hours},
-      "${collage}", "${department}", "${major}", "${student_level}","${gender}", "${work_field}", "${status}",
-      "${provide_food}", "${provide_dorm}", "${provide_transportation}")`;
-
-    pool.query(sql, (err, result) => {
-        if (err) {
-            res.status(404);
-            res.send(err);
-        } else {
-            res.status(200);
-            res.send("ur data insert")
-        }
-    })
 })
 
 function verifyToken(req, res, next) {
