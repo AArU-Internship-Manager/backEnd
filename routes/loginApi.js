@@ -18,15 +18,21 @@ router.post('/', (req, res, next) => {
     pool.query(sql, (err, result) => {
         if (err || result.length === 0) {
             res.status(404);
-            res.send('not found');
+            res.send(err);
         } else {
-            const type = result[0]['type'];
-            const id = result[0]['id'];
-            jwt.sign({ user, type, id }, 'khqes$30450#$%1234#900$!', (err, token) => {
-                res.json({
-                    token,
-                    type,
 
+            const role = result[0]['type'].toLowerCase();
+            const username = result[0]['username'];
+            const ability = [{
+                "action": "manage",
+                "subject": "all"
+            }]
+            jwt.sign({ user }, 'khqes$30450#$%1234#900$!', (err, accessToken) => {
+                res.json({
+                    accessToken,
+                    role,
+                    username,
+                    ability
                 })
             })
 
