@@ -18,7 +18,7 @@ router.post('/', (req, res, next) => {
     pool.query(sql, (err, result) => {
         if (err || result.length === 0) {
             res.status(404);
-            res.send('not found');
+            res.send(err);
         } else {
             const role = result[0]['type'].toLowerCase();
             const username = result[0]['username'];
