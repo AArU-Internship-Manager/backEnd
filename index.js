@@ -7,9 +7,11 @@ app.use(express.json());
 const loginRouter = require('./routes/loginApi')
 const adminRouter = require('./routes/adminApi')
 const studentRouter = require('./routes/studentApi')
+const offerRouter = require('./routes/offerApi')
 app.use('/login', loginRouter)
 app.use('/admin', adminRouter)
 app.use('/student', studentRouter)
+app.use('/offer', offerRouter)
 
 
 app.listen(port, () => {
