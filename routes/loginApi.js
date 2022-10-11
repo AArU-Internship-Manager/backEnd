@@ -22,19 +22,21 @@ router.post('/', (req, res, next) => {
         } else {
             const role = result[0]['type'].toLowerCase();
             const id = result[0]['id'];
+            console.log(id);
             const username = result[0]['username'];
             const ability = [{
                 "action": "manage",
                 "subject": "all"
             }]
             jwt.sign({ user, role, id }, 'khqes$30450#$%1234#900$!', (err, accessToken) => {
-
-                const sql1 = ` SELECT EN_Name  FROM university WHERE ID=(SELECT university_id from representative WHERE user_id=${id})`;
+                console.log(accessToken);
+                const sql1 = `SELECT EN_Name  FROM university WHERE ID=(SELECT university_id from representative WHERE user_id=${id})`;
                 pool.query(sql1, (err, result) => {
                     if (err) {
                         res.status(404);
                         res.send(err);
                     } else {
+                        console.log(result);
                         uni_name = result[0]['EN_Name']
                         res.json({
                             username,
