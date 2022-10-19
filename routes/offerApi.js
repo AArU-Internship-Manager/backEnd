@@ -14,6 +14,30 @@ const pool = createPool({
 router.use(fetchToken);
 router.use(verifyToken);
 
+router.get('/show_offer', (req, res, next) => {
+    const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`
+    pool.query(sql1, (err, result) => {
+        if (err) {
+            res.status(404);
+            res.send(err);
+        } else {
+            console.log(result)
+            id = result[0]['university_id']
+            const sql2 = `SELECT * FROM offer WHERE university_id_src=${id} or University_id_des=${id}`
+            pool.query(sql2, (err, result) => {
+                if (err) {
+                    res.status(404);
+                    res.send(err);
+                } else {
+                    res.status(200);
+                    res.json(result);
+                }
+            })
+        }
+    })
+
+})
+
 router.get('/AutoComplete', (req, res) => {
     inst_name = req.query.inst_name
     inst_address = req.query.inst_address
@@ -31,7 +55,7 @@ router.get('/AutoComplete', (req, res) => {
 
 })
 
-router.post('/', (req, res, next) => {
+router.post('/insert_offer', (req, res, next) => {
     const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`
     pool.query(sql1, (err, result) => {
         if (err) {
