@@ -14,7 +14,8 @@ router.post('/', (req, res, next) => {
     const name = req.body.Username;
     const password = req.body.password;
     const user = req.body.Username;
-    const sql = "select type ,username,id from `user` where `Username`='" + name + "' and `password`='" + password + "'";
+    const sql = `select type ,username,id from user where Username= "${name}" and password="${password}"`;
+    console.log(sql)
     pool.query(sql, (err, result) => {
         if (err || result.length === 0) {
             res.status(404);
@@ -32,9 +33,14 @@ router.post('/', (req, res, next) => {
                 console.log(accessToken);
                 const sql1 = `SELECT EN_Name  FROM university WHERE ID=(SELECT university_id from representative WHERE user_id=${id})`;
                 pool.query(sql1, (err, result) => {
-                    if (err) {
-                        res.status(404);
-                        res.send(err);
+                    if (err || result.length === 0) {
+                        res.json({
+                            username,
+                            ability,
+                            accessToken,
+                            role,
+
+                        })
                     } else {
                         console.log(result);
                         uni_name = result[0]['EN_Name']
