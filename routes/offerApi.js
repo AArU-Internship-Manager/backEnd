@@ -15,6 +15,7 @@ router.use(fetchToken);
 router.use(verifyToken);
 
 router.get('/show_offer', (req, res, next) => {
+    console.log(req.id)
     const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`
     pool.query(sql1, (err, result) => {
         if (err) {
@@ -23,8 +24,10 @@ router.get('/show_offer', (req, res, next) => {
         } else {
             console.log(result)
             id = result[0]['university_id']
+            console.log(id)
             const sql2 = `SELECT * FROM offer WHERE university_id_src=${id} or University_id_des=${id}`
             pool.query(sql2, (err, result) => {
+                console.log(err)
                 if (err) {
                     res.status(404);
                     res.send(err);
@@ -62,17 +65,21 @@ router.post('/insert_offer', (req, res, next) => {
             res.status(404);
             res.send(err);
         } else {
-            university_id_src = result[0]['university_id']
-            const { offer_date, requirement, work_description, work_type, start_date, end_date, Financial_support, offer_dead_line, University_id_des, organization_id, user_id, work_address, work_day, weekly_hours, daily_hours, collage, department, major, student_level, gender, work_field, provide_food, provide_dorm, provide_transportation, status } = req.body;
+            const university_id_src = result[0]['university_id']
+            const userId = req.id
+            console.log(req.body)
+            const { train_description, train_type, train_length, train_start_date, train_end_date, support_amount, support_types, meals_text, residence_text, transfer_text, meals, residence, transfer, inst_name, inst_address, place_of_work, train_aria, trainer_name, days_of_work, inst_phone, inst_fax, weekly_hours, daily_hours, college_name, branch_name, major_name, stu_level, stu_sex, other_requirments } = req.body;
 
-            const sql = `INSERT INTO offer (offer_date, university_id_src,requirement, work_description, work_type, start_date,end_date,Financial_support, offer_dead_line,	University_id_des, organization_id,	user_id, work_address, work_day, weekly_hours, daily_hours,collage, department, major, student_level, gender, work_field, status,provide_food, provide_dorm, provide_transportation)
-             VALUES ("${offer_date}", ${university_id_src}, "${requirement}", "${work_description}", "${work_type}",
-              "${start_date}", "${end_date}", "${Financial_support}", "${offer_dead_line}", ${University_id_des}, 
-              ${organization_id}, ${user_id}, "${work_address}", "${work_day}", ${weekly_hours}, ${daily_hours},
-              "${collage}", "${department}", "${major}", "${student_level}","${gender}", "${work_field}", "${status}",
-              "${provide_food}", "${provide_dorm}", "${provide_transportation}")`;
+
+            const sql = `INSERT INTO offer (offer_date, university_id_src,requirement, work_description, work_type, start_date,end_date,Financial_support,University_id_des, organization_id,user_id, work_address, work_day, weekly_hours, daily_hours,collage, department, major, student_level, gender, work_field, status,provide_food, provide_dorm, provide_transportation)
+             VALUES ("${new Date().toLocaleDateString()}", ${university_id_src}, "${other_requirments}", "${train_description}", "${train_type}",
+              "${train_start_date}", "${train_end_date}", "${support_amount}", ${1}, 
+              ${1}, ${userId}, "${train_aria}", "${days_of_work.toString()}", ${weekly_hours}, ${daily_hours},
+              "${college_name}", "${branch_name}", "${major_name}", "${stu_level}","${stu_sex}", "${null}", "active",
+              "${meals ? meals_text : null}", "${residence ? residence_text : null}", "${transfer ? transfer_text : null}")`;
 
             pool.query(sql, (err, result) => {
+                console.log(err)
                 if (err) {
                     res.status(404);
                     res.send(err);
@@ -101,9 +108,10 @@ function verifyToken(req, res, next) {
 function fetchToken(req, res, next) {
     const headrs = req.headers['authorization'];
     if (typeof headrs !== 'undefined') {
-        const bearer = headrs.split(' ')
-        const bearerToken = bearer[1]
+        const bearer = headrs.split(',')
+        const bearerToken = bearer[0]
         req.token = bearerToken
+        console.log(12344422)
         next()
     } else {
         res.sendStatus(403)
