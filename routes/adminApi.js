@@ -9,8 +9,8 @@ const pool = createPool({
     database: "swap-ar-uni",
     connectionLimit: "10",
 });
-router.use(fetchToken);
-router.use(verifyToken);
+// router.use(fetchToken);
+// router.use(verifyToken);
 router.post('/country', (req, res) => {
     const nameOfContry = req.body.contryName
     const sql = "select * from `country` where `EN_Name`='" + nameOfContry + "'";
@@ -116,9 +116,21 @@ router.post('/offers', (req, res) => {
     })
 })
 
+router.post('/add-university', (req, res) => {
+    const { ID, city_id, EN_Name, AR_Name, Location_O, Study_business, work_day, hour_no_week, phone, Fax, hour_no_day, url, email } = req.body
+    const sql = `insert into university (ID,city_id,EN_Name,AR_Name,Location_O,Study_business,work_day,hour_no_week,phone,Fax,hour_no_day,url,email) values ('${ID}','${1}','${EN_Name}','${AR_Name}','${Location_O}','${Study_business}','${work_day.toString()}','${hour_no_week}','${phone}','${Fax}','${hour_no_day}','${url}','${email}')`
 
-
-
+    pool.query(sql, (err, result) => {
+        if (err) {
+            res.status(404)
+            res.send("error")
+        }
+        else {
+            res.status(200)
+            res.send("success")
+        }
+    })
+})
 
 function verifyToken(req, res, next) {
     jwt.verify(req.token, 'khqes$30450#$%1234#900$!', (err, authData) => {
