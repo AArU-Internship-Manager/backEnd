@@ -71,7 +71,7 @@ router.post('/insert_offer', (req, res, next) => {
             const { train_description, train_type, train_length, train_start_date, train_end_date, support_amount, support_types, meals_text, residence_text, transfer_text, meals, residence, transfer, inst_name, inst_address, place_of_work, train_aria, trainer_name, days_of_work, inst_phone, inst_fax, weekly_hours, daily_hours, college_name, branch_name, major_name, stu_level, stu_sex, other_requirments } = req.body;
 
 
-            const sql = `INSERT INTO offer (offer_date, university_id_src,requirement, work_description, work_type, start_date,end_date,Financial_support,University_id_des, organization_id,user_id, work_address, work_day, weekly_hours, daily_hours,collage, department, major, student_level, gender, work_field, status,provide_food, provide_dorm, provide_transportation)
+            const sql = `INSERT INTO offer (offer_date, university_id_src,other_requirments, train_description, train_type, train_start_date,train_end_date,support_amount,University_id_des, organization_id,user_id, train_aria, days_of_work, weekly_hours, daily_hours,college_name, branch_name,major_name, stu_level, stu_sex, work_field, status,meals_text, residence_text, transfer_text)
              VALUES ("${new Date().toLocaleDateString()}", ${university_id_src}, "${other_requirments}", "${train_description}", "${train_type}",
               "${train_start_date}", "${train_end_date}", "${support_amount}", ${1}, 
               ${1}, ${userId}, "${train_aria}", "${days_of_work.toString()}", ${weekly_hours}, ${daily_hours},

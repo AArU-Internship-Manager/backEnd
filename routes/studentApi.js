@@ -39,7 +39,7 @@ router.post('/', (req, res, next) => {
                 studyYears,
                 totalCreditHours,
                 universityMajor } = req.body;
-            const sql = `INSERT INTO student_e (ID,full_name, nationality, university_id , college, major, birth_place, gender, phone, email,  location, passport_id, health_status, study_year, total_study_year, fluency_in_English, total_hour, passport_end_date, birth_date)
+            const sql = `INSERT INTO student_e (ID,name, nationality, university_id , college, universityMajor, birthPlace, gender, phone, email,  address, passportNumber, healthStatus, studyYearFinished, studyYears, fluencyInEnglish, totalCreditHours, passportExpiryDate, birthDate)
              VALUES (${id},"${name}", "${nationality}", ${university_id}, "${college}", "${universityMajor}","${birthPlace}","${gender}", "${phone}", "${email}","${address}", "${passportNumber}","${healthStatus}", "${studyYearFinished}", "${studyYears}", "${fluencyInEnglish}", ${totalCreditHours}, "${passportExpiryDate}", "${birthDate}")`;
             pool.query(sql, (err, result) => {
                 if (err) {
