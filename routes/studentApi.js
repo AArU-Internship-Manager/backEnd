@@ -13,7 +13,44 @@ const pool = createPool({
 router.use(fetchToken);
 router.use(verifyToken);
 
-router.post('/', (req, res, next) => {
+
+router.get('/show_student', (req, res, next) => {
+    const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`;
+    pool.query(sql1, (err, result) => {
+        if (err) {
+            res.status(404);
+            res.send(err);
+        } else {
+            id = result[0]['university_id']
+            const sql2 = `SELECT * FROM student_e WHERE university_id=${id}`;
+            pool.query(sql2, (err, result) => {
+                if (err) {
+                    res.status(404);
+                    res.send(err);
+                } else {
+                    res.status(200);
+                    res.json(result);
+                }
+            })
+        }
+    })
+})
+
+router.get('/show_student/:id', (req, res, next) => {
+    const sql = `SELECT * FROM student_e WHERE id = ${req.params.id}`;
+    pool.query(sql, (err, result) => {
+        if (err) {
+            res.status(404);
+            res.send(err);
+        } else {
+            res.status(200);
+            res.json(result);
+        }
+    })
+})
+
+
+router.post('/insert_student', (req, res, next) => {
     const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`;
     pool.query(sql1, (err, result) => {
         if (err) {

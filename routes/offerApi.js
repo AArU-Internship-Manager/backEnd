@@ -14,6 +14,43 @@ const pool = createPool({
 router.use(fetchToken);
 router.use(verifyToken);
 
+router.put('/update_offer', (req, res, next) => {
+    const { offer_id, university_id_dest } = req.body;
+    const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`
+    pool.query(sql1, (err, result) => {
+        if (err) {
+            res.status(404);
+            res.send(err);
+        } else {
+            id = result[0]['university_id']
+            const sql2 = `UPDATE offer SET University_id_des=${university_id_dest}, status="waiting" WHERE id=${offer_id} AND university_id_src=${id}`
+            pool.query(sql2, (err, result) => {
+                if (err) {
+                    res.status(404);
+                    res.send(err);
+                } else {
+                    res.status(200);
+                    res.send("offer updated");
+                }
+            })
+        }
+    })
+})
+
+router.get('/show_offer/:id', (req, res, next) => {
+    const sql = `SELECT * FROM offer WHERE id=${req.params.id}`;
+    pool.query(sql, (err, result) => {
+        if (err) {
+            res.status(404);
+            res.send(err);
+        } else {
+            res.status(200);
+            res.json(result);
+        }
+    })
+
+})
+
 router.get('/show_offer', (req, res, next) => {
     console.log(req.id)
     const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`
@@ -111,7 +148,6 @@ function fetchToken(req, res, next) {
         const bearer = headrs.split(',')
         const bearerToken = bearer[0]
         req.token = bearerToken
-        console.log(12344422)
         next()
     } else {
         res.sendStatus(403)
