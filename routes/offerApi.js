@@ -112,7 +112,7 @@ router.post('/insert_offer', (req, res, next) => {
              VALUES ("${new Date().toLocaleDateString()}", ${university_id_src}, "${other_requirments}", "${train_description}", "${train_type}",
               "${train_start_date}", "${train_end_date}", "${support_amount}", ${1}, 
               ${1}, ${userId}, "${train_aria}", "${days_of_work.toString()}", ${weekly_hours}, ${daily_hours},
-              "${college_name}", "${branch_name}", "${major_name}", "${stu_level}","${stu_sex}", "${null}", "active",
+              "${college_name}", "${branch_name}", "${major_name}", "${stu_level}","${stu_sex}", "${null}", 0,
               "${meals ? meals_text : null}", "${residence ? residence_text : null}", "${transfer ? transfer_text : null}")`;
 
             pool.query(sql, (err, result) => {
