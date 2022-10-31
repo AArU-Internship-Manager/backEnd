@@ -9,8 +9,9 @@ const pool = createPool({
     database: "swap-ar-uni",
     connectionLimit: "10",
 });
-// router.use(fetchToken);
-// router.use(verifyToken);
+router.use(fetchToken);
+router.use(verifyToken);
+
 router.post('/country', (req, res) => {
     const nameOfContry = req.body.contryName
     const sql = "select * from `country` where `EN_Name`='" + nameOfContry + "'";
@@ -51,49 +52,31 @@ router.post('/cities', (req, res) => {
         }
     })
 })
-
-router.post('/universities', (req, res) => {
-    const nameOfUniversity = req.body.universityName
-    const sql = "select * from `university` where `EN_Name`='" + nameOfUniversity + "'";
+// generate api for get all universities without my university
+router.get('/universities', (req, res) => {
+    const user_id = req.id
+    const sql = "select university_id from `representative` where `user_id`='" + user_id + "'";
     pool.query(sql, (err, result) => {
         if (err || result.length == 0) {
             res.status(404)
             res.send("error")
         }
         else {
+            const my_university_id = result[0]['university_id']
+            const sql = "select * from `university` where `ID`!='" + my_university_id + "'";
+            pool.query(sql, (err, result) => {
+                if (err || result.length == 0) {
+                    res.status(404)
+                    res.send("error")
+                }
 
-            const id = result[0]['ID']
-            const arName = result[0]['AR_Name']
-            res.json({
-                id,
-                arName
-
+                else {
+                    res.json(result)
+                }
             })
         }
     })
 })
-
-router.post('/supervisors', (req, res) => {
-    const nameOfSupervisor = req.body.supervisorName
-    const sql = "select * from `representative(user)` where `Name`='" + nameOfSupervisor + "'";
-    pool.query(sql, (err, result) => {
-        if (err || result.length == 0) {
-            res.status(404)
-            res.send("error")
-        }
-        else {
-
-            const id = result[0]['ID']
-            const Email = result[0]['Email']
-            res.json({
-                id,
-                Email
-
-            })
-        }
-    })
-})
-
 
 router.post('/offers', (req, res) => {
     const idOfOffer = req.body.offerId
@@ -137,12 +120,9 @@ function verifyToken(req, res, next) {
         if (err) {
             res.sendStatus(403);
         } else {
-            type = authData.type
-            if (type == 'Admin') {
-                next()
-            } else {
-                res.sendStatus(401)
-            }
+            req.id = authData.id
+            console.log(authData, 111111111111)
+            next()
         }
     })
 }
@@ -154,10 +134,10 @@ function fetchToken(req, res, next) {
         const bearerToken = bearer[0]
         req.token = bearerToken
         next()
-
     } else {
         res.sendStatus(403)
     }
 }
+
 
 module.exports = router;
