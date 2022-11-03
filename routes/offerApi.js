@@ -14,6 +14,57 @@ const pool = createPool({
 router.use(fetchToken);
 router.use(verifyToken);
 
+
+router.get('/get_uni_info/:id', (req, res) => {
+    const id = req.params.id;
+    const sql1 = `SELECT university_id_src FROM offer WHERE id=${id}`;
+    pool.query(sql1, (err, result) => {
+        if (err) {
+            res.status(404);
+            res.send(err);
+        }
+        else {
+            uni_id = result[0]['university_id_src']
+            let uni_info, user_info, user_name
+            const sql2 = `SELECT EN_Name , AR_Name FROM university WHERE ID=${uni_id}`;
+            const sql3 = `SELECT Email , phone , fax, ID FROM representative WHERE university_id=${uni_id}`;
+            pool.query(sql2, (err, result) => {
+                if (err) {
+                    res.status(404);
+                    res.send(err);
+                }
+                else {
+                    uni_info = result;
+                }
+                pool.query(sql3, (err, result) => {
+                    if (err) {
+                        res.status(404);
+                        res.send(err);
+                    }
+                    else {
+                        user_info = result;
+                        id_user = result[0]['ID']
+                        const sql4 = `SELECT username FROM user WHERE id=${id_user}`;
+                        pool.query(sql4, (err, result) => {
+                            if (err) {
+                                res.status(404);
+                                res.send(err);
+                            }
+                            else {
+                                user_name = result;
+                                res.send({ uni_info, user_info, user_name });
+                            }
+                        })
+                    }
+
+                })
+            }
+            )
+        }
+    })
+}
+)
+
 router.put('/update_offer', (req, res, next) => {
     const { offer_id, university_id_dest } = req.body;
     const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`
@@ -145,8 +196,8 @@ function verifyToken(req, res, next) {
 function fetchToken(req, res, next) {
     const headrs = req.headers['authorization'];
     if (typeof headrs !== 'undefined') {
-        const bearer = headrs.split(',')
-        const bearerToken = bearer[0]
+        const bearer = headrs.split(' ')
+        const bearerToken = bearer[1]
         req.token = bearerToken
         next()
     } else {
