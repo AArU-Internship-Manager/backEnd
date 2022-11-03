@@ -196,8 +196,8 @@ function verifyToken(req, res, next) {
 function fetchToken(req, res, next) {
     const headrs = req.headers['authorization'];
     if (typeof headrs !== 'undefined') {
-        const bearer = headrs.split(' ')
-        const bearerToken = bearer[1]
+        const bearer = headrs.split(',')
+        const bearerToken = bearer[0]
         req.token = bearerToken
         next()
     } else {
