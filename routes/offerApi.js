@@ -11,8 +11,8 @@ const pool = createPool({
     connectionLimit: "10",
 });
 
-router.use(fetchToken);
-router.use(verifyToken);
+// router.use(fetchToken);
+// router.use(verifyToken);
 
 router.put('/update_offer', (req, res, next) => {
     const { offer_id, university_id_dest } = req.body;
@@ -131,28 +131,57 @@ router.post('/insert_offer', (req, res, next) => {
 
 })
 
-function verifyToken(req, res, next) {
-    jwt.verify(req.token, 'khqes$30450#$%1234#900$!', (err, authData) => {
+router.get('/owned-offers', (req, res, next) => {
+    const id = req.body.id
+    const sql = `SELECT * FROM offer WHERE user_id=${id} and status=0`
+    pool.query(sql, (err, result) => {
         if (err) {
-            res.sendStatus(403);
+            res.status(404);
+            res.send(err);
         } else {
-            req.id = authData.id
-            next()
+            res.status(200);
+            res.json(result);
         }
     })
-}
+})
 
-function fetchToken(req, res, next) {
-    const headrs = req.headers['authorization'];
-    if (typeof headrs !== 'undefined') {
-        const bearer = headrs.split(',')
-        const bearerToken = bearer[0]
-        req.token = bearerToken
-        next()
-    } else {
-        res.sendStatus(403)
+router.get('/obtained-offers', (req, res, next) => {
+    const id = req.body.id
+    const sql = `SELECT * FROM offer WHERE user_id=${id} and status=1`
+    pool.query(sql, (err, result) => {
+        if (err) {
+            res.status(404);
+            res.send(err);
+        } else {
+            res.status(200);
+            res.json(result);
+        }
+    })
+})
+
+
+    function verifyToken(req, res, next) {
+        jwt.verify(req.token, 'khqes$30450#$%1234#900$!', (err, authData) => {
+            if (err) {
+                res.sendStatus(403);
+            } else {
+                req.id = authData.id
+                next()
+            }
+        })
     }
-}
+
+    function fetchToken(req, res, next) {
+        const headrs = req.headers['authorization'];
+        if (typeof headrs !== 'undefined') {
+            const bearer = headrs.split(',')
+            const bearerToken = bearer[0]
+            req.token = bearerToken
+            next()
+        } else {
+            res.sendStatus(403)
+        }
+    }
 
 
-module.exports = router;
+    module.exports = router;

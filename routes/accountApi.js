@@ -10,10 +10,9 @@ const pool = createPool({
     connectionLimit: "10",
 });
 
-// router.use(fetchToken);
-// router.use(verifyToken);
+router.use(fetchToken);
+router.use(verifyToken);
 
-// generate api for update password
 router.post('/change-password', (req, res, next) => {
     const { currentPassword, newPassword } = req.body;
     const sql = `SELECT password FROM user WHERE id=${req.id}`;
@@ -48,7 +47,6 @@ router.post('/change-password', (req, res, next) => {
     })
 })
 
-// generate api for  return university name,user name,email,phone number ,address,country
 router.get('/user-details', (req, res, next) => {
     console.log(11111)
     const user_id = req.body.id;
