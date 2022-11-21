@@ -146,7 +146,7 @@ router.get('/owned-offers', (req, res, next) => {
 })
 
 router.get('/obtained-offers', (req, res, next) => {
-    const id = req.body.id
+    const id = req.id
     const sql = `SELECT * FROM offer WHERE user_id=${id} and status=1`
     pool.query(sql, (err, result) => {
         if (err) {
@@ -158,6 +158,35 @@ router.get('/obtained-offers', (req, res, next) => {
         }
     })
 })
+router.get('/active-offers', (req, res, next) => {
+    const id = req.id
+    const sql = `SELECT * FROM offer WHERE user_id=${id} and status=2`
+    pool.query(sql, (err, result) => {
+        if (err) {
+            res.status(404);
+            res.send(err);
+        } else {
+            res.status(200);
+            res.json(result);
+        }
+    })
+})
+router.get('/finished-offers', (req, res, next) => {
+    const id = req.id
+    const sql = `SELECT * FROM offer WHERE user_id=${id} and status=4`
+    pool.query(sql, (err, result) => {
+        if (err) {
+            res.status(404);
+            res.send(err);
+        } else {
+            res.status(200);
+            res.json(result);
+        }
+    })
+})
+
+
+
 
 
     function verifyToken(req, res, next) {
