@@ -11,8 +11,8 @@ const pool = createPool({
     connectionLimit: "10",
 });
 
-// router.use(fetchToken);
-// router.use(verifyToken);
+router.use(fetchToken);
+router.use(verifyToken);
 
 router.put('/update_offer', (req, res, next) => {
     const { offer_id, university_id_dest } = req.body;
@@ -52,19 +52,15 @@ router.get('/show_offer/:id', (req, res, next) => {
 })
 
 router.get('/show_offer', (req, res, next) => {
-    console.log(req.id)
     const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`
     pool.query(sql1, (err, result) => {
         if (err) {
             res.status(404);
             res.send(err);
         } else {
-            console.log(result)
             id = result[0]['university_id']
-            console.log(id)
             const sql2 = `SELECT * FROM offer WHERE university_id_src=${id} or University_id_des=${id}`
             pool.query(sql2, (err, result) => {
-                console.log(err)
                 if (err) {
                     res.status(404);
                     res.send(err);
@@ -96,27 +92,46 @@ router.get('/AutoComplete', (req, res) => {
 })
 
 router.post('/insert_offer', (req, res, next) => {
+    console.log(req.id)
     const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`
     pool.query(sql1, (err, result) => {
+        console.log(err)
         if (err) {
             res.status(404);
             res.send(err);
         } else {
+            console.log("yes here")
             const university_id_src = result[0]['university_id']
             const userId = req.id
-            console.log(req.body)
             const { train_description, train_type, train_length, train_start_date, train_end_date, support_amount, support_types, meals_text, residence_text, transfer_text, meals, residence, transfer, inst_name, inst_address, place_of_work, train_aria, trainer_name, days_of_work, inst_phone, inst_fax, weekly_hours, daily_hours, college_name, branch_name, major_name, stu_level, stu_sex, other_requirments } = req.body;
-
+            if (new Date(train_start_date) > new Date(train_end_date)) {
+                return res.json({
+                    status: 400,
+                    message: "start date must be before end date"
+                })
+            }
+            if (new Date(train_start_date) < new Date()) {
+                console.log("here")
+                return res.json({
+                    status: 400,
+                    message: "start date must be after today"
+                })
+            }
+            if (new Date(train_end_date) < new Date()) {
+                return res.json({
+                    status: 400,
+                    message: "end date must be after today"
+                })
+            }
 
             const sql = `INSERT INTO offer (offer_date, university_id_src,other_requirments, train_description, train_type, train_start_date,train_end_date,support_amount,University_id_des, organization_id,user_id, train_aria, days_of_work, weekly_hours, daily_hours,college_name, branch_name,major_name, stu_level, stu_sex, work_field, status,meals_text, residence_text, transfer_text)
-             VALUES ("${new Date().toLocaleDateString()}", ${university_id_src}, "${other_requirments}", "${train_description}", "${train_type}",
+             VALUES ("${new Date().toISOString().slice(0, 10)}", ${university_id_src}, "${other_requirments}", "${train_description}", "${train_type}",
               "${train_start_date}", "${train_end_date}", "${support_amount}", ${1}, 
               ${1}, ${userId}, "${train_aria}", "${days_of_work.toString()}", ${weekly_hours}, ${daily_hours},
               "${college_name}", "${branch_name}", "${major_name}", "${stu_level}","${stu_sex}", "${null}", 0,
               "${meals ? meals_text : null}", "${residence ? residence_text : null}", "${transfer ? transfer_text : null}")`;
 
             pool.query(sql, (err, result) => {
-                console.log(err)
                 if (err) {
                     res.status(404);
                     res.send(err);
@@ -131,7 +146,7 @@ router.post('/insert_offer', (req, res, next) => {
 
 })
 
-router.get('/owned-offers', (req, res, next) => {
+router.get('/own-offers', (req, res, next) => {
     const id = req.body.id
     const sql = `SELECT * FROM offer WHERE user_id=${id} and status=0`
     pool.query(sql, (err, result) => {
@@ -160,7 +175,7 @@ router.get('/obtained-offers', (req, res, next) => {
 })
 router.get('/active-offers', (req, res, next) => {
     const id = req.id
-    const sql = `SELECT * FROM offer WHERE user_id=${id} and status=2`
+    const sql = `SELECT * FROM offer WHERE user_id=${id} and status=3`
     pool.query(sql, (err, result) => {
         if (err) {
             res.status(404);
@@ -171,9 +186,9 @@ router.get('/active-offers', (req, res, next) => {
         }
     })
 })
-router.get('/finished-offers', (req, res, next) => {
+router.get('/ended-offers', (req, res, next) => {
     const id = req.id
-    const sql = `SELECT * FROM offer WHERE user_id=${id} and status=4`
+    const sql = `SELECT * FROM offer WHERE user_id=${id} and status=5`
     pool.query(sql, (err, result) => {
         if (err) {
             res.status(404);
@@ -185,32 +200,67 @@ router.get('/finished-offers', (req, res, next) => {
     })
 })
 
+const getOfferStatus = (offer_id) => {
+    const sql = `SELECT status FROM offer WHERE id=${offer_id}`
+    pool.query(sql, (err, result) => {
+        if (err) {
+            return "not found"
+        } else {
+            return result[0]['status']
+        }
+    })
+}
 
-
-
-
-    function verifyToken(req, res, next) {
-        jwt.verify(req.token, 'khqes$30450#$%1234#900$!', (err, authData) => {
-            if (err) {
-                res.sendStatus(403);
-            } else {
-                req.id = authData.id
-                next()
-            }
+router.post("/send-offer", (req, res, next) => {
+    const { offer_id, university_id_des } = req.body
+    const offerStatus = getOfferStatus(offer_id)
+    if (offerStatus === "not found") {
+        return res.json({
+            status: 404,
+            message: "offer not found"
         })
     }
-
-    function fetchToken(req, res, next) {
-        const headrs = req.headers['authorization'];
-        if (typeof headrs !== 'undefined') {
-            const bearer = headrs.split(',')
-            const bearerToken = bearer[0]
-            req.token = bearerToken
-            next()
+    const sql = `update offer set status=${+offerStatus + 1}, University_id_des=${university_id_des} where id=${offer_id}`
+    pool.query(sql, (err, result) => {
+        if (err) {
+            res.json({
+                status: 404,
+                message: "error"
+            })
         } else {
-            res.sendStatus(403)
+            res.json({
+                status: 200,
+                message: "sent"
+            })
         }
+    })
+})
+
+
+
+
+function verifyToken(req, res, next) {
+    jwt.verify(req.token, 'khqes$30450#$%1234#900$!', (err, authData) => {
+        if (err) {
+            res.sendStatus(403);
+        } else {
+            req.id = authData.id
+            next()
+        }
+    })
+}
+
+function fetchToken(req, res, next) {
+    const headrs = req.headers['authorization'];
+    if (typeof headrs !== 'undefined') {
+        const bearer = headrs.split(',')
+        const bearerToken = bearer[0]
+        req.token = bearerToken
+        next()
+    } else {
+        res.sendStatus(403)
     }
+}
 
 
-    module.exports = router;
+module.exports = router;
