@@ -103,8 +103,19 @@ router.post('/insert_offer', (req, res, next) => {
             console.log("yes here")
             const university_id_src = result[0]['university_id']
             const userId = req.id
-            const { train_description, train_type, train_length, train_start_date, train_end_date, support_amount, support_types, meals_text, residence_text, transfer_text, meals, residence, transfer, inst_name, inst_address, place_of_work, train_aria, trainer_name, days_of_work, inst_phone, inst_fax, weekly_hours, daily_hours, college_name, branch_name, major_name, stu_level, stu_sex, other_requirments } = req.body;
+            const { train_description, train_type, train_length, train_start_date, train_end_date, support_amount,
+                support_types, meals_text, residence_text, transfer_text, meals, residence, transfer, inst_name,
+                inst_address, place_of_work, train_aria, trainer_name, days_of_work, inst_phone, inst_fax,
+                weekly_hours, daily_hours, college_name, branch_name, major_name, stu_level, stu_sex,
+                other_requirments } = req.body;
+            if (new Date(train_end_date) < new Date()) {
+                return res.json({
+                    status: 400,
+                    message: "end date must be after today"
+                })
+            }
             if (new Date(train_start_date) > new Date(train_end_date)) {
+                console.log("11111")
                 return res.json({
                     status: 400,
                     message: "start date must be before end date"
@@ -117,21 +128,19 @@ router.post('/insert_offer', (req, res, next) => {
                     message: "start date must be after today"
                 })
             }
-            if (new Date(train_end_date) < new Date()) {
-                return res.json({
-                    status: 400,
-                    message: "end date must be after today"
-                })
-            }
-
-            const sql = `INSERT INTO offer (offer_date, university_id_src,other_requirments, train_description, train_type, train_start_date,train_end_date,support_amount,University_id_des, organization_id,user_id, train_aria, days_of_work, weekly_hours, daily_hours,college_name, branch_name,major_name, stu_level, stu_sex, work_field, status,meals_text, residence_text, transfer_text)
+            const sql = `INSERT INTO offer (offer_date, university_id_src,other_requirments, train_description, train_type,
+                 train_length,train_start_date,train_end_date,support_amount,University_id_des, organization_id,user_id,
+                 train_aria, days_of_work, weekly_hours, daily_hours,college_name, branch_name,major_name, stu_level, stu_sex,
+                  work_field, status,meals_text, residence_text, transfer_text,inst_phone,inst_fax,inst_name,inst_address,trainer_name)
              VALUES ("${new Date().toISOString().slice(0, 10)}", ${university_id_src}, "${other_requirments}", "${train_description}", "${train_type}",
-              "${train_start_date}", "${train_end_date}", "${support_amount}", ${1}, 
+             ${train_length},"${train_start_date}", "${train_end_date}", "${support_amount}", ${1}, 
               ${1}, ${userId}, "${train_aria}", "${days_of_work.toString()}", ${weekly_hours}, ${daily_hours},
               "${college_name}", "${branch_name}", "${major_name}", "${stu_level}","${stu_sex}", "${null}", 0,
-              "${meals ? meals_text : null}", "${residence ? residence_text : null}", "${transfer ? transfer_text : null}")`;
+              "${meals ? meals_text : null}", "${residence ? residence_text : null}", "${transfer ? transfer_text : null}",
+              "${inst_phone}", "${inst_fax}", "${inst_name}", "${inst_address}", "${trainer_name}")`;
 
             pool.query(sql, (err, result) => {
+                console.log(err)
                 if (err) {
                     res.status(404);
                     res.send(err);
