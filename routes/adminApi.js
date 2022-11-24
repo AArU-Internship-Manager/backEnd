@@ -111,7 +111,6 @@ function verifyToken(req, res, next) {
       res.sendStatus(403);
     } else {
       req.id = authData.id;
-      console.log(authData, 111111111111);
       next();
     }
   });

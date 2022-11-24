@@ -10,17 +10,14 @@ const pool = createPool({
     connectionLimit: "10",
 });
 
-// router.use(fetchToken);
-// router.use(verifyToken);
+router.use(fetchToken);
+router.use(verifyToken);
 
-// generate api for update password
 router.post('/change-password', (req, res, next) => {
     const { currentPassword, newPassword } = req.body;
     const sql = `SELECT password FROM user WHERE id=${req.id}`;
     pool.query(sql, (err, result) => {
-        console.log(result)
         if (err) {
-            console.log(err)
             res.status(404);
             res.send("error");
         } else {
@@ -48,9 +45,7 @@ router.post('/change-password', (req, res, next) => {
     })
 })
 
-// generate api for  return university name,user name,email,phone number ,address,country
 router.get('/user-details', (req, res, next) => {
-    console.log(11111)
     const user_id = req.body.id;
     const sql = `select username from user where id=${user_id}`;
     pool.query(sql, (err, result) => {
@@ -97,7 +92,6 @@ router.get('/user-details', (req, res, next) => {
 
 function verifyToken(req, res, next) {
     jwt.verify(req.token, 'khqes$30450#$%1234#900$!', (err, authData) => {
-        console.log(err)
         if (err) {
             res.sendStatus(403);
         } else {
