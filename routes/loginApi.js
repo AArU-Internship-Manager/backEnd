@@ -40,6 +40,7 @@ router.post("/", (req, res, next) => {
           pool.query(sql1, (err, result) => {
             if (err || result.length === 0) {
               res.json({
+                id,
                 username,
                 ability,
                 accessToken,
@@ -49,6 +50,7 @@ router.post("/", (req, res, next) => {
               console.log(result);
               university_id = result[0]["ID"];
               res.json({
+                id,
                 username,
                 ability,
                 university_id,
