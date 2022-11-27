@@ -129,11 +129,11 @@ router.post('/insert_offer', (req, res, next) => {
                 })
             }
             const sql = `INSERT INTO offer (offer_date, university_id_src,other_requirments, train_description, train_type,
-                 train_length,train_start_date,train_end_date,support_amount,University_id_des, organization_id,user_id,
+                 train_length,train_start_date,train_end_date,support_amount, organization_id,user_id,
                  train_aria, days_of_work, weekly_hours, daily_hours,college_name, branch_name,major_name, stu_level, stu_sex,
                   work_field, status,meals_text, residence_text, transfer_text,inst_phone,inst_fax,inst_name,inst_address,trainer_name)
              VALUES ("${new Date().toISOString().slice(0, 10)}", ${university_id_src}, "${other_requirments}", "${train_description}", "${train_type}",
-             ${train_length},"${train_start_date}", "${train_end_date}", "${support_amount}", ${1}, 
+             ${train_length},"${train_start_date}", "${train_end_date}", "${support_amount}", 
               ${1}, ${userId}, "${train_aria}", "${days_of_work.toString()}", ${weekly_hours}, ${daily_hours},
               "${college_name}", "${branch_name}", "${major_name}", "${stu_level}","${stu_sex}", "${null}", 0,
               "${meals ? meals_text : null}", "${residence ? residence_text : null}", "${transfer ? transfer_text : null}",
@@ -209,43 +209,158 @@ router.get('/ended-offers', (req, res, next) => {
     })
 })
 
-const getOfferStatus = (offer_id) => {
-    const sql = `SELECT status FROM offer WHERE id=${offer_id}`
-    pool.query(sql, (err, result) => {
-        if (err) {
-            return "not found"
-        } else {
-            return result[0]['status']
-        }
-    })
-}
 
 router.post("/send-offer", (req, res, next) => {
     const { offer_id, university_id_des } = req.body
-    const offerStatus = getOfferStatus(offer_id)
-    if (offerStatus === "not found") {
-        return res.json({
-            status: 404,
-            message: "offer not found"
-        })
-    }
-    const sql = `update offer set status=${+offerStatus + 1}, University_id_des=${university_id_des} where id=${offer_id}`
-    pool.query(sql, (err, result) => {
+    const sql = `select status from offer where id=${offer_id}`
+    const retrieveOffer = pool.query(sql, (err, result) => {
         if (err) {
-            res.json({
+            return res.json({
                 status: 404,
-                message: "error"
-            })
-        } else {
-            res.json({
-                status: 200,
-                message: "sent"
+                message: err.message
             })
         }
-    })
+        else {
+            const offerStatus = result[0]['status'];
+            console.log(offerStatus);
+            if (offerStatus === "not found") {
+                return res.json({
+                    status: 404,
+                    message: "offer not found"
+                })
+            }
+            const sql = `update offer set status="${+offerStatus + 1}", University_id_des=${university_id_des} where id=${offer_id}`
+            pool.query(sql, (err, result) => {
+                if (err) {
+                    res.json({
+                        status: 404,
+                        message: "error"
+                    })
+                }
+            })
+            return res.json({
+                status: 200,
+                message: "success"
+            })
+        }
+    });
 })
 
+router.post("/accept-offer", (req, res, next) => {
+    const { offer_id } = req.body
+    const sql = `select status from offer where id=${offer_id}`
+    const retrieveOffer = pool.query(sql
+        , (err, result) => {
+            if (err) {
+                return res.json({
+                    status: 404,
+                    message: err.message
+                })
+            }
+            else {
+                const offerStatus = result[0]['status'];
+                console.log(offerStatus);
+                if (offerStatus === "not found") {
+                    return res.json({
+                        status: 404,
+                        message: "offer not found"
+                    })
+                }
+                const sql = `update offer set status="${+offerStatus + 1}" where id=${offer_id}`
+                pool.query(sql, (err, result) => {
+                    if (err) {
+                        res.json({
+                            status: 404,
+                            message: "error"
+                        })
+                    }
+                })
+                return res.json({
+                    status: 200,
+                    message: "success"
+                })
+            }
+        });
+})
 
+router.post("/reject-offer", (req, res, next) => {
+    const { offer_id } = req.body
+    const sql = `select status from offer where id=${offer_id}`
+    const retrieveOffer = pool.query(sql
+        , (err, result) => {
+            if (err) {
+                return res.json({
+                    status: 404,
+                    message: err.message
+                })
+            }
+            else {
+                const offerStatus = result[0]['status'];
+                console.log(offerStatus);
+                if (offerStatus === "not found") {
+                    return res.json({
+                        status: 404,
+                        message: "offer not found"
+                    })
+                }
+                const sql = `update offer set status="${+offerStatus - 1}" where id=${offer_id}`
+                pool.query(sql
+                    , (err, result) => {
+                        if (err) {
+                            res.json({
+                                status: 404,
+                                message: "error"
+                            })
+                        }
+                    })
+                return res.json({
+                    status: 200,
+                    message: "success"
+                })
+            }
+        });
+})
+
+router.post("/delete-offer", (req, res, next) => {
+    console.log(111)
+    const { offer_id } = req.body
+    console.log(offer_id)
+    const sql = `select status from offer where id=${offer_id}`
+    pool.query(sql
+        , (err, result) => {
+            if (err) {
+                return res.json({
+                    status: 404,
+                    message: err.message
+                })
+            }
+            else {
+                const offerStatus = result[0]['status'];
+                console.log(offerStatus);
+                if (offerStatus === "not found") {
+                    return res.json({
+                        status: 404,
+                        message: "offer not found"
+                    })
+                }
+                console.log(offerStatus)
+                const sql = `delete from offer where id=${offer_id}`
+                pool.query(sql
+                    , (err, result) => {
+                        if (err) {
+                            return res.json({
+                                status: 404,
+                                message: "error"
+                            })
+                        }
+                    })
+                return res.json({
+                    status: 200,
+                    message: "success"
+                })
+            }
+        });
+})
 
 
 function verifyToken(req, res, next) {
@@ -254,7 +369,14 @@ function verifyToken(req, res, next) {
             res.sendStatus(403);
         } else {
             req.id = authData.id
-            next()
+            console.log(222)
+            try {
+                next()
+            } catch (err) {
+                console.log(err)
+            }
+
+
         }
     })
 }
