@@ -52,30 +52,20 @@ router.post('/cities', (req, res) => {
         }
     })
 })
-// generate api for get all universities without my university
+// generate api for get universities
 router.get('/universities', (req, res) => {
-    const user_id = req.id
-    const sql = "select university_id from `representative` where `user_id`='" + user_id + "'";
+    const sql = "select * from `university`";
     pool.query(sql, (err, result) => {
         if (err || result.length == 0) {
             res.status(404)
             res.send("error")
         }
         else {
-            const my_university_id = result[0]['university_id']
-            const sql = "select * from `university` where `ID`!='" + my_university_id + "'";
-            pool.query(sql, (err, result) => {
-                if (err || result.length == 0) {
-                    res.status(404)
-                    res.send("error")
-                }
-
-                else {
-                    res.json(result)
-                }
-            })
+            res.json(result)
         }
-    })
+    }
+    )
+
 })
 
 router.post('/offers', (req, res) => {
