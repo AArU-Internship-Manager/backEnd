@@ -93,6 +93,72 @@ router.post("/add-university", (req, res) => {
     email,
   } = req.body;
   const sql = `insert into university (ID,city_id,EN_Name,AR_Name,Location_O,Study_business,work_day,hour_no_week,phone,Fax,hour_no_day,url,email) values ('${ID}','${1}','${EN_Name}','${AR_Name}','${Location_O}','${Study_business}','${work_day.toString()}','${hour_no_week}','${phone}','${Fax}','${hour_no_day}','${url}','${email}')`;
+});
+router.post("/cities", (req, res) => {
+  const nameOfCity = req.body.cityName;
+  const sql = "select * from `city` where `EN_Name`='" + nameOfCity + "'";
+  pool.query(sql, (err, result) => {
+    if (err || result.length == 0) {
+      res.status(404);
+      res.send("error");
+    } else {
+      const id = result[0]["ID"];
+      const arName = result[0]["AR_Name"];
+      res.json({
+        id,
+        arName,
+      });
+    }
+  });
+});
+// generate api for get universities
+router.get("/universities", (req, res) => {
+  const sql = "select * from `university`";
+  pool.query(sql, (err, result) => {
+    if (err || result.length == 0) {
+      res.status(404);
+      res.send("error");
+    } else {
+      res.json(result);
+    }
+  });
+});
+
+router.post("/offers", (req, res) => {
+  const idOfOffer = req.body.offerId;
+  const sql = "select * from `offer` where `id`='" + idOfOffer + "'";
+  pool.query(sql, (err, result) => {
+    if (err || result.length == 0) {
+      res.status(404);
+      res.send("error");
+    } else {
+      const id = result[0]["id"];
+      const start_date = result[0]["start_date"];
+      res.json({
+        id,
+        start_date,
+      });
+    }
+  });
+});
+
+router.post("/add-university", (req, res) => {
+  const {
+    ID,
+    city_id,
+    EN_Name,
+    AR_Name,
+    Location_O,
+    Study_business,
+    work_day,
+    hour_no_week,
+    phone,
+    Fax,
+    hour_no_day,
+    url,
+    email,
+  } = req.body;
+  const sql = `insert into university (ID,city_id,EN_Name,AR_Name,Location_O,Study_business,work_day,hour_no_week,phone,Fax,hour_no_day,url,email) values ('${ID}','${1}','${EN_Name}','${AR_Name}','${Location_O}','${Study_business}','${work_day.toString()}','${hour_no_week}','${phone}','${Fax}','${hour_no_day}','${url}','${email}')`;
 
   pool.query(sql, (err, result) => {
     if (err) {
