@@ -9,6 +9,14 @@ const pool = createPool({
   database: "swap-ar-uni",
   connectionLimit: "10",
 });
+const abilityUser = [
+  { action: 'read', subject: 'ACL' }
+  ,
+  { action: 'read', subject: 'Auth' }]
+
+const abilityAdmin = [
+  { action: 'manage', subject: 'all' }
+]
 
 router.post("/", (req, res, next) => {
   const name = req.body.Username;
@@ -23,12 +31,7 @@ router.post("/", (req, res, next) => {
       const role = result[0]["type"].toLowerCase();
       const id = result[0]["id"];
       const username = result[0]["username"];
-      const ability = [
-        {
-          action: "manage",
-          subject: "all",
-        },
-      ];
+      const ability = role === 'admin' ? abilityAdmin : abilityUser;
       jwt.sign(
         { user, role, id },
         "khqes$30450#$%1234#900$!",
