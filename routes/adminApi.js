@@ -9,8 +9,8 @@ const pool = createPool({
   database: "swap-ar-uni",
   connectionLimit: "10",
 });
-router.use(fetchToken);
-router.use(verifyToken);
+// router.use(fetchToken);
+// router.use(verifyToken);
 
 router.post("/country", (req, res) => {
   const nameOfContry = req.body.contryName;
@@ -76,24 +76,7 @@ router.post("/offers", (req, res) => {
   });
 });
 
-router.post("/add-university", (req, res) => {
-  const {
-    ID,
-    city_id,
-    EN_Name,
-    AR_Name,
-    Location_O,
-    Study_business,
-    work_day,
-    hour_no_week,
-    phone,
-    Fax,
-    hour_no_day,
-    url,
-    email,
-  } = req.body;
-  const sql = `insert into university (ID,city_id,EN_Name,AR_Name,Location_O,Study_business,work_day,hour_no_week,phone,Fax,hour_no_day,url,email) values ('${ID}','${1}','${EN_Name}','${AR_Name}','${Location_O}','${Study_business}','${work_day.toString()}','${hour_no_week}','${phone}','${Fax}','${hour_no_day}','${url}','${email}')`;
-});
+
 router.post("/cities", (req, res) => {
   const nameOfCity = req.body.cityName;
   const sql = "select * from `city` where `EN_Name`='" + nameOfCity + "'";
@@ -111,7 +94,7 @@ router.post("/cities", (req, res) => {
     }
   });
 });
-// generate api for get universities
+
 router.get("/universities", (req, res) => {
   const sql = "select * from `university`";
   pool.query(sql, (err, result) => {
@@ -145,7 +128,6 @@ router.post("/offers", (req, res) => {
 router.post("/add-university", (req, res) => {
   const {
     ID,
-    city_id,
     EN_Name,
     AR_Name,
     Location_O,
@@ -170,6 +152,80 @@ router.post("/add-university", (req, res) => {
     }
   });
 });
+
+// router.post("/add-user", (req, res) => {
+//   console.log(1)
+//   const {
+//     id,
+//     username,
+//     password,
+//     type,
+//     email,
+//     phone,
+//     fax,
+//     university_id,
+//     start_date,
+//     end_date,
+//   } = req.body;
+//   const sql = `insert into user (id,username,password,type) values (${id},'${username}','${password}','${type}')`;
+//   const sql2 = `insert into representative (user_id,email,phone,fax,university_id,start_date,end_date,status) values ('${id}','${email}','${phone}','${fax}',${university_id},'${start_date}','${end_date}',1)`;
+//   pool.query(sql, (err, result) => {
+//     console.log(err)
+//     if (err) {
+//       res.status(404);
+//       res.send("error");
+//     }
+//   });
+//   console.log("addd user done")
+//   pool.query(sql2, (err, result) => {
+//     console.log("hello")
+//     console.log("err", err)
+//     if (err) {
+//       res.status(404);
+//       res.send("error");
+//     } else {
+//       res.status(200);
+//       res.send("success");
+//     }
+//   });
+// });
+
+router.post("/add-user", (req, res) => {
+  const {
+    id,
+    username,
+    password,
+    type,
+    email,
+    phone,
+    fax,
+    university_id,
+    start_date,
+    end_date,
+  } = req.body;
+  const sql = `insert into user (id,username,password,type) values (${id},'${username}','${password}','${type}')`;
+  const sql2 = `insert into representative (user_id,email,phone,fax,university_id,start_date,end_date,status) values ('${id}','${email}','${phone}','${fax}',${university_id},'${start_date}','${end_date}',1)`;
+  pool.query(sql, (err, result) => {
+    if (err) {
+      res.status(404);
+      res.send("error");
+    } else {
+      pool.query(sql2, (err, result) => {
+        console.log(err);
+        if (err) {
+          res.status(404);
+          res.send("error");
+        } else {
+          res.status(200);
+          res.send("success");
+        }
+      });
+
+    }
+  });
+});
+
+
 
 function verifyToken(req, res, next) {
   jwt.verify(req.token, "khqes$30450#$%1234#900$!", (err, authData) => {

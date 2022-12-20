@@ -31,7 +31,7 @@ router.post("/", (req, res, next) => {
       const role = result[0]["type"].toLowerCase();
       const id = result[0]["id"];
       const username = result[0]["username"];
-      const ability = role === 'admin' ? abilityAdmin : abilityUser;
+      const ability = role === 'user' ? abilityAdmin : abilityUser;
       jwt.sign(
         { user, role, id },
         "khqes$30450#$%1234#900$!",
