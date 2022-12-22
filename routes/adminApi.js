@@ -9,8 +9,8 @@ const pool = createPool({
   database: "swap-ar-uni",
   connectionLimit: "10",
 });
-// router.use(fetchToken);
-// router.use(verifyToken);
+router.use(fetchToken);
+router.use(verifyToken);
 
 router.post("/country", (req, res) => {
   const nameOfContry = req.body.contryName;
@@ -153,46 +153,9 @@ router.post("/add-university", (req, res) => {
   });
 });
 
-// router.post("/add-user", (req, res) => {
-//   console.log(1)
-//   const {
-//     id,
-//     username,
-//     password,
-//     type,
-//     email,
-//     phone,
-//     fax,
-//     university_id,
-//     start_date,
-//     end_date,
-//   } = req.body;
-//   const sql = `insert into user (id,username,password,type) values (${id},'${username}','${password}','${type}')`;
-//   const sql2 = `insert into representative (user_id,email,phone,fax,university_id,start_date,end_date,status) values ('${id}','${email}','${phone}','${fax}',${university_id},'${start_date}','${end_date}',1)`;
-//   pool.query(sql, (err, result) => {
-//     console.log(err)
-//     if (err) {
-//       res.status(404);
-//       res.send("error");
-//     }
-//   });
-//   console.log("addd user done")
-//   pool.query(sql2, (err, result) => {
-//     console.log("hello")
-//     console.log("err", err)
-//     if (err) {
-//       res.status(404);
-//       res.send("error");
-//     } else {
-//       res.status(200);
-//       res.send("success");
-//     }
-//   });
-// });
 
 router.post("/add-user", (req, res) => {
   const {
-    id,
     username,
     password,
     type,
@@ -203,29 +166,39 @@ router.post("/add-user", (req, res) => {
     start_date,
     end_date,
   } = req.body;
-  const sql = `insert into user (id,username,password,type) values (${id},'${username}','${password}','${type}')`;
-  const sql2 = `insert into representative (user_id,email,phone,fax,university_id,start_date,end_date,status) values ('${id}','${email}','${phone}','${fax}',${university_id},'${start_date}','${end_date}',1)`;
+  const sql = `select * from user where username='${username}'`;
   pool.query(sql, (err, result) => {
     if (err) {
-      res.status(404);
-      res.send("error");
+      return res.json({ status: 400, message: "error" });
+    } else if (result.length > 0) {
+      return res.json({ status: 400, message: "username already exists" });
     } else {
+      const sql2 = `insert into user (username,password,type) values ('${username}','${password}','${type}')`;
       pool.query(sql2, (err, result) => {
-        console.log(err);
         if (err) {
-          res.status(404);
-          res.send("error");
+          return res.json({ status: 400, message: "error" });
         } else {
-          res.status(200);
-          res.send("success");
+          const sql3 = `select id from user where username='${username}'`;
+          pool.query(sql3, (err, result) => {
+            if (err) {
+              return res.json({ status: 400, message: "error" });
+            } else {
+              const id = result[0]["id"];
+              const sql4 = `insert into representative (user_id,email,phone,fax,university_id,start_date,end_date,status) values ('${id}','${email}','${phone}','${fax}',${university_id},'${start_date}','${end_date}',1)`;
+              pool.query(sql4, (err, result) => {
+                if (err) {
+                  return res.json({ status: 400, message: "error" });
+                } else {
+                  return res.json({ status: 200, message: "success" });
+                }
+              });
+            }
+          });
         }
       });
-
     }
   });
 });
-
-
 
 function verifyToken(req, res, next) {
   jwt.verify(req.token, "khqes$30450#$%1234#900$!", (err, authData) => {

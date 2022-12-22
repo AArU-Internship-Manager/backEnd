@@ -11,8 +11,8 @@ const pool = createPool({
   connectionLimit: "10",
 });
 
-// router.use(fetchToken);
-// router.use(verifyToken);
+router.use(fetchToken);
+router.use(verifyToken);
 
 router.put("/update_offer", (req, res, next) => {
   const { offer_id, university_id_dest } = req.body;
