@@ -53,6 +53,7 @@ router.get('/show_student/:id', (req, res, next) => {
 router.post('/insert_student', (req, res, next) => {
     const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`;
     pool.query(sql1, (err, result) => {
+        console.log(null);
         if (err) {
             res.status(404);
             res.send(err);
@@ -65,7 +66,6 @@ router.post('/insert_student', (req, res, next) => {
                 email,
                 fluencyInEnglish,
                 gender,
-                id,
                 healthStatus,
                 name,
                 nationality,
@@ -76,9 +76,11 @@ router.post('/insert_student', (req, res, next) => {
                 studyYears,
                 totalCreditHours,
                 universityMajor } = req.body;
-            const sql = `INSERT INTO student_e (ID,name, nationality, university_id , college, universityMajor, birthPlace, gender, phone, email,  address, passportNumber, healthStatus, studyYearFinished, studyYears, fluencyInEnglish, totalCreditHours, passportExpiryDate, birthDate)
-             VALUES (${id},"${name}", "${nationality}", ${university_id}, "${college}", "${universityMajor}","${birthPlace}","${gender}", "${phone}", "${email}","${address}", "${passportNumber}","${healthStatus}", "${studyYearFinished}", "${studyYears}", "${fluencyInEnglish}", ${totalCreditHours}, "${passportExpiryDate}", "${birthDate}")`;
+            const sql = `INSERT INTO student_e (name, nationality, university_id , college, universityMajor, birthPlace, gender, phone, email,  address, passportNumber, healthStatus, studyYearFinished, studyYears, fluencyInEnglish, totalCreditHours, passportExpiryDate, birthDate)
+             VALUES ("${name}", "${nationality}", ${university_id}, "${college}", "${universityMajor}","${birthPlace}","${gender}", "${phone}", "${email}","${address}", "${passportNumber}","${healthStatus}", "${studyYearFinished}", "${studyYears}", "${fluencyInEnglish}", ${totalCreditHours}, "${passportExpiryDate}", "${birthDate}")`;
             pool.query(sql, (err, result) => {
+                console.log(err);
+                console.log(sql);
                 if (err) {
                     res.status(403);
                     return res.json("this id is in use");
