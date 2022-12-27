@@ -125,80 +125,138 @@ router.post("/offers", (req, res) => {
   });
 });
 
-router.post("/add-university", (req, res) => {
-  const {
-    ID,
-    EN_Name,
-    AR_Name,
-    Location_O,
-    Study_business,
-    work_day,
-    hour_no_week,
-    phone,
-    Fax,
-    hour_no_day,
-    url,
-    email,
-  } = req.body;
-  const sql = `insert into university (ID,city_id,EN_Name,AR_Name,Location_O,Study_business,work_day,hour_no_week,phone,Fax,hour_no_day,url,email) values ('${ID}','${1}','${EN_Name}','${AR_Name}','${Location_O}','${Study_business}','${work_day.toString()}','${hour_no_week}','${phone}','${Fax}','${hour_no_day}','${url}','${email}')`;
-
-  pool.query(sql, (err, result) => {
-    if (err) {
-      res.status(404);
-      res.send("error");
-    } else {
-      res.status(200);
-      res.send("success");
-    }
-  });
-});
 
 
 router.post("/add-user", (req, res) => {
   const {
     username,
     password,
-    type,
+    name,
     email,
+    AR_Name,
+    EN_Name,
     phone,
-    fax,
-    university_id,
-    start_date,
-    end_date,
-  } = req.body;
-  const sql = `select * from user where username='${username}'`;
-  pool.query(sql, (err, result) => {
-    if (err) {
-      return res.json({ status: 400, message: "error" });
-    } else if (result.length > 0) {
-      return res.json({ status: 400, message: "username already exists" });
-    } else {
-      const sql2 = `insert into user (username,password,type) values ('${username}','${password}','${type}')`;
-      pool.query(sql2, (err, result) => {
-        if (err) {
-          return res.json({ status: 400, message: "error" });
+    Fax,
+    hour_no_week,
+    hour_no_day,
+    Location_O,
+    Study_buisness,
+    url,
+    city_id
+  } = req.body
+  const Promises = new Promise((resolve, reject) => {
+    const sql = `select username from user where username='${username}'`
+    pool.query(sql, (err, result) => {
+      if (err || result.length > 0) {
+        reject("username already exist")
+      } else {
+        resolve()
+      }
+    })
+  })
+
+  Promises.then(() => {
+    return new Promise((resolve, reject) => {
+      const sql = `select ID from university where En_Name='${EN_Name}'`
+      pool.query(sql, (err, result) => {
+        if (err || result.length > 0) {
+          reject("university already exist")
         } else {
-          const sql3 = `select id from user where username='${username}'`;
-          pool.query(sql3, (err, result) => {
-            if (err) {
-              return res.json({ status: 400, message: "error" });
-            } else {
-              const id = result[0]["id"];
-              const sql4 = `insert into representative (user_id,email,phone,fax,university_id,start_date,end_date,status) values ('${id}','${email}','${phone}','${fax}',${university_id},'${start_date}','${end_date}',1)`;
-              pool.query(sql4, (err, result) => {
-                if (err) {
-                  return res.json({ status: 400, message: "error" });
-                } else {
-                  return res.json({ status: 200, message: "success" });
-                }
-              });
-            }
-          });
+          resolve()
         }
-      });
-    }
-  });
-});
+      })
+    })
+  })
+  .then(() => {
+    return new Promise((resolve, reject) => {
+      const sql = `insert into university (En_Name,Ar_Name,Location_O,Study_business,phone,Fax,
+        hour_no_week,hour_no_day,url) values 
+        ('${EN_Name}','${AR_Name}','${Location_O}','${Study_buisness}','${phone}',
+        '${Fax}','${hour_no_week}','${hour_no_day}','${url}')`;
+      pool.query(sql, (err, result) => {
+        if (err) {
+          reject("error")
+        } else {
+          console.log("result1")
+          resolve()
+        }
+      })
+    })
+  }).then(() => {
+    return new Promise((resolve, reject) => {
+      const sql = `insert into user (username,password,type,name) values
+      ('${username}','${password}','user','${name}')`;
+      pool.query(sql, (err, result) => {
+        if (err) {
+          console.log("err2", err)
+          reject(`erro2`)
+        } else {
+          console.log("result2")
+          resolve()
+        }
+      }
+      )
+    })
+
+  }).then(() => {
+    return new Promise((resolve, reject) => {
+      const sql = `select ID from university where En_Name = '${EN_Name}' and Ar_Name = '${AR_Name}'`;
+      pool.query(sql, (err, result) => {
+        console.log(err, "res", result)
+        if (err) {
+          console.log("err3", err)
+          reject("erro3")
+        } else {
+          console.log("result3", result[0]["ID"])
+          resolve(result[0]["ID"])
+        }
+      })
+    })
+  }).then((university_id) => {
+    console.log("university_id", university_id)
+
+    return new Promise((resolve, reject) => {
+      console.log("this from select user id")
+      const sql = `select id from user where username = '${username}'`;
+      pool.query(sql, (err, result) => {
+        console.log(err, "res", result)
+        if (err) {
+          console.log("err4", err)
+          reject("erro4")
+        } else {
+          console.log("result4")
+          resolve({
+            university_id,
+            user_id: result[0]["id"]
+          })
+        }
+      })
+    })
+  }).then((data) => {
+    const { university_id, user_id } = data
+    console.log("university_id", university_id)
+    console.log("user_id", user_id)
+    return new Promise((resolve, reject) => {
+      const sql = `insert into representative (university_id, Email, phone, fax, start_date, status, user_id)
+        values('${university_id}', '${email}', '${phone}', '${Fax}', '${new Date().toISOString().slice(0, 10)}', '1', '${user_id}')`
+      pool.query(sql, (err, result) => {
+        if (err) {
+          console.log("err5", err)
+          reject("erro5")
+        } else {
+          console.log("result5")
+          resolve("add user successfully")
+        }
+      })
+    })
+  }).then((msg) => {
+    return res.status(200).send(msg)
+  })
+    .catch((err) => {
+      return res.status(400).send({err})
+    })
+})
+
 
 function verifyToken(req, res, next) {
   jwt.verify(req.token, "khqes$30450#$%1234#900$!", (err, authData) => {
@@ -212,6 +270,7 @@ function verifyToken(req, res, next) {
 }
 
 function fetchToken(req, res, next) {
+  console.log("---------------------------------------")
   const headrs = req.headers["authorization"];
   if (typeof headrs !== "undefined") {
     const bearer = headrs.split(",");

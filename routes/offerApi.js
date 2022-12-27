@@ -89,16 +89,14 @@ router.get("/AutoComplete", (req, res) => {
 });
 
 router.post("/insert_offer", (req, res, next) => {
-  console.log(1)
   const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`;
   pool.query(sql1, (err, result) => {
-    if (err) {
-      return {
+    if (err || result.length == 0) {
+      return res.json({
         status: 400,
-        message: "error",
-      }
+        message: "you are not a representative"
+      });
     } else {
-      console.log(2)
       const university_id_src = result[0]["university_id"];
       const userId = req.id;
       const {
@@ -132,6 +130,7 @@ router.post("/insert_offer", (req, res, next) => {
         stu_sex,
         other_requirments,
       } = req.body;
+
       if (new Date(train_end_date) < new Date()) {
         return res.json({
           status: 400,
@@ -150,7 +149,6 @@ router.post("/insert_offer", (req, res, next) => {
           message: "start date must be after today",
         });
       }
-      console.log(3)
       const sql = `INSERT INTO offer (offer_date, university_id_src,other_requirments, train_description, train_type,
                  train_length,train_start_date,train_end_date,support_amount,user_id,
                  train_aria, days_of_work, weekly_hours, daily_hours,college_name, branch_name,major_name, stu_level, stu_sex,
@@ -162,23 +160,19 @@ router.post("/insert_offer", (req, res, next) => {
             10
           )}", ${university_id_src}, "${other_requirments}", "${train_description}", "${train_type}",
              ${train_length},"${train_start_date}", "${train_end_date}", "${support_amount}", 
-               ${userId}, "${train_aria}", "${days_of_work.toString()}", ${weekly_hours}, ${daily_hours},
+               ${userId}, "${train_aria}", "${days_of_work.toString()}", "${weekly_hours}", "${daily_hours}",
               "${college_name}", "${branch_name}", "${major_name}", "${stu_level}","${stu_sex}", "${null}", 0,
               "${meals ? meals_text : null}", "${residence ? residence_text : null
         }", "${transfer ? transfer_text : null}",
               "${inst_phone}", "${inst_fax}", "${inst_name}", "${inst_address}", "${trainer_name}")`;
 
       pool.query(sql, (err, result) => {
-        console.log(4)
-        console.log(err)
         if (err) {
-          console.log(err)
           return res.json({
             status: 400,
             message: err,
           })
         } else {
-          console.log(5)
           return res.json({
             status: 200,
             message: "offer inserted successfully",
