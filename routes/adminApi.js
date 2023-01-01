@@ -76,7 +76,6 @@ router.post("/offers", (req, res) => {
   });
 });
 
-
 router.post("/cities", (req, res) => {
   const nameOfCity = req.body.cityName;
   const sql = "select * from `city` where `EN_Name`='" + nameOfCity + "'";
@@ -125,8 +124,6 @@ router.post("/offers", (req, res) => {
   });
 });
 
-
-
 router.post("/add-user", (req, res) => {
   const {
     username,
@@ -142,121 +139,168 @@ router.post("/add-user", (req, res) => {
     Location_O,
     Study_buisness,
     url,
-    city_id
-  } = req.body
-  const Promises = new Promise((resolve, reject) => {
-    const sql = `select username from user where username='${username}'`
-    pool.query(sql, (err, result) => {
+    city_id,
+  } = req.body;
+  try {
+    let userSql = `select username from user where username='${username}'`;
+    pool.query(userSql, (err, result) => {
       if (err || result.length > 0) {
-        reject("username already exist")
-      } else {
-        resolve()
+        res.status(400).send("username is already in use");
+        return;
       }
-    })
-  })
 
-  Promises.then(() => {
-    return new Promise((resolve, reject) => {
-      const sql = `select ID from university where En_Name='${EN_Name}'`
-      pool.query(sql, (err, result) => {
-        if (err || result.length > 0) {
-          reject("university already exist")
-        } else {
-          resolve()
+      let universitySql = `select ID from university where email='${email}' or phone='${phone}' or url='${url}' or (EN_Name='${EN_Name}' and AR_Name='${AR_Name}')`;
+      pool.query(universitySql, (err, result) => {
+        if (err || result?.length > 0) {
+          res.status(400).send("university details are already in use");
+          return;
         }
-      })
-    })
-  })
-  .then(() => {
-    return new Promise((resolve, reject) => {
-      const sql = `insert into university (En_Name,Ar_Name,Location_O,Study_business,phone,Fax,
-        hour_no_week,hour_no_day,url) values 
-        ('${EN_Name}','${AR_Name}','${Location_O}','${Study_buisness}','${phone}',
-        '${Fax}','${hour_no_week}','${hour_no_day}','${url}')`;
-      pool.query(sql, (err, result) => {
-        if (err) {
-          reject("error")
-        } else {
-          console.log("result1")
-          resolve()
-        }
-      })
-    })
-  }).then(() => {
-    return new Promise((resolve, reject) => {
-      const sql = `insert into user (username,password,type,name) values
-      ('${username}','${password}','user','${name}')`;
-      pool.query(sql, (err, result) => {
-        if (err) {
-          console.log("err2", err)
-          reject(`erro2`)
-        } else {
-          console.log("result2")
-          resolve()
-        }
-      }
-      )
-    })
 
-  }).then(() => {
-    return new Promise((resolve, reject) => {
-      const sql = `select ID from university where En_Name = '${EN_Name}' and Ar_Name = '${AR_Name}'`;
-      pool.query(sql, (err, result) => {
-        console.log(err, "res", result)
-        if (err) {
-          console.log("err3", err)
-          reject("erro3")
-        } else {
-          console.log("result3", result[0]["ID"])
-          resolve(result[0]["ID"])
-        }
-      })
-    })
-  }).then((university_id) => {
-    console.log("university_id", university_id)
+        let sql = `insert into university (En_Name,Ar_Name,Location_O,Study_business,phone,Fax,
+          hour_no_week,hour_no_day,url, city_id, email) values 
+          ('${EN_Name}','${AR_Name}','${Location_O}','${Study_buisness}','${phone}',
+          '${Fax}','${hour_no_week}','${hour_no_day}','${url}', '${city_id}', '${email}')`;
+        pool.query(sql, (err, result) => {
+          if (err) {
+            res
+              .status(400)
+              .send("error adding to university, try refreshing the page");
+            return;
+          }
 
-    return new Promise((resolve, reject) => {
-      console.log("this from select user id")
-      const sql = `select id from user where username = '${username}'`;
-      pool.query(sql, (err, result) => {
-        console.log(err, "res", result)
-        if (err) {
-          console.log("err4", err)
-          reject("erro4")
-        } else {
-          console.log("result4")
-          resolve({
-            university_id,
-            user_id: result[0]["id"]
-          })
-        }
-      })
-    })
-  }).then((data) => {
-    const { university_id, user_id } = data
-    console.log("university_id", university_id)
-    console.log("user_id", user_id)
-    return new Promise((resolve, reject) => {
-      const sql = `insert into representative (university_id, Email, phone, fax, start_date, status, user_id)
-        values('${university_id}', '${email}', '${phone}', '${Fax}', '${new Date().toISOString().slice(0, 10)}', '1', '${user_id}')`
-      pool.query(sql, (err, result) => {
-        if (err) {
-          console.log("err5", err)
-          reject("erro5")
-        } else {
-          console.log("result5")
-          resolve("add user successfully")
-        }
-      })
-    })
-  }).then((msg) => {
-    return res.status(200).send(msg)
-  })
-    .catch((err) => {
-      return res.status(400).send({err})
-    })
-})
+          let userSql = `insert into user (username,password,type,name) values
+        ('${username}','${password}','user','${name}')`;
 
+          pool.query(userSql, (err, result) => {
+            if (err) {
+              res
+                .status(400)
+                .send("error adding to user, try refreshing the page");
+              return;
+            }
+            let userSql = `select id from user where username='${username}'`;
+            pool.query(userSql, (err, result) => {
+              if (err) {
+                res.status(400).send("username not found");
+                return;
+              }
+
+              let userId = result[0]["id"];
+
+              let universitySql = `select ID from university where email='${email}' and phone='${phone}' and url='${url}' and city_id='${city_id}' and EN_Name='${EN_Name}'`;
+              pool.query(universitySql, (err, result) => {
+                if (err) {
+                  res.status(400).send("university not found");
+                  return;
+                }
+                let universityId = result[0]["ID"];
+
+                let sql = `insert into representative (university_id, start_date, user_id) values('${universityId}','${new Date()
+                  .toISOString()
+                  .slice(0, 10)}', '${userId}')`;
+                pool.query(sql, (err, result) => {
+                  if (err) {
+                    res.status(400).send("Error adding the user");
+                    return;
+                  }
+                  res.status(200).send("Added User successfully");
+                  return;
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(400).send({ error });
+  }
+});
+
+router.get("/get-user", (req, res) => {
+  try {
+    const { userId } = req.query;
+    let sql = `SELECT id, name, username, status, type FROM user WHERE id = ${userId}`;
+    let query = pool.query(sql, (error, result) => {
+      if (error) throw error;
+      console.log(result);
+      let user = {
+        name: result[0]["name"],
+        username: result[0]["username"],
+        id: result[0]["id"],
+        status: result[0]["status"],
+        type: result[0]["type"],
+      };
+      let sql = `SELECT university_id, start_date FROM representative WHERE user_id = ${userId}`;
+      let query = pool.query(sql, (error, result) => {
+        if (error) throw error;
+        let universityId = result[0].university_id;
+        let start_date = result[0].start_date;
+        // Get university data
+        let sql = `SELECT * FROM university WHERE id = ${universityId}`;
+        let query = pool.query(sql, (error, result) => {
+          if (error) throw error;
+          let university = result[0];
+          console.log({
+            ...university,
+            ...user,
+            start_date,
+          });
+          let sql = `SELECT * FROM offer WHERE university_id_src = ${university.ID} and status > 0`;
+          let query = pool.query(sql, (error, result) => {
+            if (error) throw error;
+            res.send({
+              ...user,
+              ...university,
+              start_date: start_date,
+              email: university.email,
+              offers: result,
+            });
+          });
+        });
+      });
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .send({ error: "An error occurred while processing your request." });
+  }
+});
+
+router.get("/get-all-data", (req, res) => {
+  try {
+    // select all users aren't admin
+    let sql = `SELECT id, name, username FROM user WHERE type != 'admin'`;
+    let query = pool.query(sql, (error, result) => {
+      if (error) throw error;
+      let users = result.map((user) => ({
+        id: user.id,
+        name: user.name,
+        username: user.username,
+      }));
+      let sql = `SELECT * FROM representative WHERE university_id != 'null'`;
+      let query = pool.query(sql, (error, result) => {
+        if (error) throw error;
+        let relations = result;
+        // Get university data
+        let sql = `SELECT * FROM university`;
+        let query = pool.query(sql, (error, result) => {
+          if (error) throw error;
+          let universities = result;
+          // let
+          res.send({ users, relations, universities });
+        });
+      });
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .send({ error: "An error occurred while processing your request." });
+  }
+});
 
 function verifyToken(req, res, next) {
   jwt.verify(req.token, "khqes$30450#$%1234#900$!", (err, authData) => {
@@ -270,7 +314,7 @@ function verifyToken(req, res, next) {
 }
 
 function fetchToken(req, res, next) {
-  console.log("---------------------------------------")
+  console.log("---------------------------------------");
   const headrs = req.headers["authorization"];
   if (typeof headrs !== "undefined") {
     const bearer = headrs.split(",");
