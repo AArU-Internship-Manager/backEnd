@@ -1,4 +1,5 @@
 const express = require("express");
+const md5 = require("md5");
 const router = express.Router();
 const { createPool } = require("mysql");
 var jwt = require("jsonwebtoken");
@@ -10,17 +11,15 @@ const pool = createPool({
   connectionLimit: "10",
 });
 const abilityUser = [
-  { action: 'read', subject: 'ACL' }
-  ,
-  { action: 'read', subject: 'Auth' }]
+  { action: "read", subject: "ACL" },
+  { action: "read", subject: "Auth" },
+];
 
-const abilityAdmin = [
-  { action: 'manage', subject: 'all' }
-]
+const abilityAdmin = [{ action: "manage", subject: "all" }];
 
 router.post("/", (req, res, next) => {
   const name = req.body.Username;
-  const password = req.body.password;
+  const password = md5(req.body.password);
   const user = req.body.Username;
   const sql = `select type ,username,id from user where Username= "${name}" and password="${password}"`;
   pool.query(sql, (err, result) => {
@@ -31,7 +30,7 @@ router.post("/", (req, res, next) => {
       const role = result[0]["type"].toLowerCase();
       const id = result[0]["id"];
       const username = result[0]["username"];
-      const ability = role === 'user' ? abilityAdmin : abilityUser;
+      const ability = role === "user" ? abilityAdmin : abilityUser;
       jwt.sign(
         { user, role, id },
         "khqes$30450#$%1234#900$!",

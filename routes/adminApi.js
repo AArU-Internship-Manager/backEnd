@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const md5 = require("md5");
 const { createPool } = require("mysql");
 var jwt = require("jsonwebtoken");
 const pool = createPool({
@@ -140,6 +141,7 @@ router.post("/add-user", (req, res) => {
     Study_buisness,
     url,
     city_id,
+    avatar,
   } = req.body;
   try {
     let userSql = `select username from user where username='${username}'`;
@@ -167,9 +169,9 @@ router.post("/add-user", (req, res) => {
               .send("error adding to university, try refreshing the page");
             return;
           }
-
-          let userSql = `insert into user (username,password,type,name) values
-        ('${username}','${password}','user','${name}')`;
+          console.log(avatar);
+          let userSql = `insert into user (username,password,type,name, avatar) values
+        ('${username}','${md5(password)}','user','${name}', '${avatar}')`;
 
           pool.query(userSql, (err, result) => {
             if (err) {
@@ -274,7 +276,7 @@ router.get("/get-all-data", (req, res) => {
     // select all users aren't admin
     let sql = `SELECT id, name, username FROM user WHERE type != 'admin'`;
     let query = pool.query(sql, (error, result) => {
-      if (error) throw error;
+      if (error) res.send(error).status(400);
       let users = result.map((user) => ({
         id: user.id,
         name: user.name,
