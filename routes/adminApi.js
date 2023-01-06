@@ -18,8 +18,8 @@ const pool = createPool({
   database: "swap-ar-uni",
   connectionLimit: "10",
 });
-router.use(fetchToken);
-router.use(verifyToken);
+// router.use(fetchToken);
+// router.use(verifyToken);
 
 router.post("/country", (req, res) => {
   const nameOfContry = req.body.contryName;
@@ -308,6 +308,76 @@ router.get("/get-all-data", (req, res) => {
       .send({ error: "An error occurred while processing your request." });
   }
 });
+
+router.post("/suspend-user", (req, res) => {
+  try {
+    const { userId } = req.body;
+    const sql = `update user set status = "suspend" where id = ${userId}`;
+    pool.query(sql, (err, result) => {
+      if (err) throw err;
+      const sql = `update representative set end_date = '${new Date().toISOString().slice(0, 10)}' where user_id = ${userId}`;
+      pool.query(sql, (err, result) => {
+        if (err) throw err;
+        res.status(200).send("User suspended successfully");
+      });
+    });
+  } catch (error) {
+    res.status(500).send({ error: "An error occurred while processing your request." });
+  }
+});
+
+router.post("/activate-user", (req, res) => {
+  try {
+    const { userId } = req.body;
+    const sql = `update user set status = "active" where id = ${userId}`;
+    pool.query(sql, (err, result) => {
+      if (err) throw err;
+      const sql = `update representative set end_date = null where user_id = ${userId}`;
+      pool.query(sql, (err, result) => {
+        if (err) throw err;
+        res.status(200).send("User activated successfully");
+      });
+    });
+  } catch (error) {
+    res.status(500).send({ error: "An error occurred while processing your request." });
+  }
+});
+
+router.post("/suspend-add-user", (req, res) => {
+  try {
+    const { userId, username, password, type, name, universityId } = req.body;
+    const sql = `select username from user where username = '${username}'`;
+    pool.query(sql, (err, result) => {
+      if (err || result.length > 0) {
+        return res.status(400).send({ error: "Username already exists" });
+      }
+      const sql = `update user set status = "suspend" where id = ${userId}`;
+      pool.query(sql, (err, result) => {
+        if (err) throw err;
+        const sql = `update representative set end_date = '${new Date().toISOString().slice(0, 10)}' where user_id = ${userId}`;
+        pool.query(sql, (err, result) => {
+          if (err) throw err;
+          const sql = `insert into user (username, password, type, name,status) values 
+          ('${username}', '${password}', '${type}', '${name}',"active")`;
+          pool.query(sql, (err, result) => {
+            if (err) throw err;
+            const sql = `insert into representative (user_id, university_id,start_date) values
+            (${result.insertId}, ${universityId}, '${new Date().toISOString().slice(0, 10)}')`;
+            pool.query(sql, (err, result) => {
+              if (err) throw err;
+              res.status(200).send("User added successfully");
+            });
+          });
+        });
+      });
+    });
+  } catch (error) {
+    return res.status(500).send({ error: "An error occurred while processing your request." });
+  }
+});
+
+
+
 
 function verifyToken(req, res, next) {
   jwt.verify(req.token, "khqes$30450#$%1234#900$!", (err, authData) => {
