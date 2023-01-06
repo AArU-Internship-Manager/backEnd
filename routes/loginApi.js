@@ -21,7 +21,7 @@ router.post("/", (req, res, next) => {
   const name = req.body.Username;
   const password = md5(req.body.password);
   const user = req.body.Username;
-  const sql = `select type ,username,id from user where Username= "${name}" and password="${password}"`;
+  const sql = `select type, username, id, avatar from user where Username= "${name}" and password="${password}"`;
   pool.query(sql, (err, result) => {
     if (err || result.length === 0) {
       res.status(404);
@@ -30,6 +30,7 @@ router.post("/", (req, res, next) => {
       const role = result[0]["type"].toLowerCase();
       const id = result[0]["id"];
       const username = result[0]["username"];
+      const avatar = result[0]["avatar"];
       const ability = role === "user" ? abilityAdmin : abilityUser;
       jwt.sign(
         { user, role, id },
@@ -44,6 +45,7 @@ router.post("/", (req, res, next) => {
                 ability,
                 accessToken,
                 role,
+                avatar,
               });
             } else {
               university_id = result[0]["ID"];
@@ -54,6 +56,7 @@ router.post("/", (req, res, next) => {
                 university_id,
                 accessToken,
                 role,
+                avatar,
               });
             }
           });

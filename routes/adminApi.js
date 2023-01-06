@@ -2,7 +2,15 @@ const express = require("express");
 const router = express.Router();
 const md5 = require("md5");
 const { createPool } = require("mysql");
-var jwt = require("jsonwebtoken");
+// const multer = require("multer");
+// const storage = multer.diskStorage({
+//   destination: "./uploads/images/",
+//   filename: (req, file, cb) => {
+//     return cb(null, `${file.filename}_${Date.now()}${path}`);
+//   },
+// });
+
+const jwt = require("jsonwebtoken");
 const pool = createPool({
   host: "localhost",
   user: "root",
@@ -141,79 +149,86 @@ router.post("/add-user", (req, res) => {
     Study_buisness,
     url,
     city_id,
-    avatar,
   } = req.body;
   try {
-    let userSql = `select username from user where username='${username}'`;
-    pool.query(userSql, (err, result) => {
-      if (err || result.length > 0) {
-        res.status(400).send("username is already in use");
-        return;
-      }
-
-      let universitySql = `select ID from university where email='${email}' or phone='${phone}' or url='${url}' or (EN_Name='${EN_Name}' and AR_Name='${AR_Name}')`;
-      pool.query(universitySql, (err, result) => {
-        if (err || result?.length > 0) {
-          res.status(400).send("university details are already in use");
+    if (req.files) {
+      const avatar = req.files.avatar;
+      console.log(avatar);
+      const fileName = `${Date.now()}_${avatar.name}`;
+      avatar.mv(filePath, (err) => {
+        if (err) {
+          return res.status(500).send(err);
+        }
+      });
+      const fileUrl = `http://localhost:3500/${fileName}`;
+      let userSql = `select username from user where username='${username}'`;
+      pool.query(userSql, (err, result) => {
+        if (err || result.length > 0) {
+          res.status(400).send(err.message);
           return;
         }
 
-        let sql = `insert into university (En_Name,Ar_Name,Location_O,Study_business,phone,Fax,
-          hour_no_week,hour_no_day,url, city_id, email) values 
-          ('${EN_Name}','${AR_Name}','${Location_O}','${Study_buisness}','${phone}',
-          '${Fax}','${hour_no_week}','${hour_no_day}','${url}', '${city_id}', '${email}')`;
-        pool.query(sql, (err, result) => {
-          if (err) {
-            res
-              .status(400)
-              .send("error adding to university, try refreshing the page");
+        let universitySql = `select ID from university where email='${email}' or phone='${phone}' or url='${url}' or (EN_Name='${EN_Name}' and AR_Name='${AR_Name}')`;
+        pool.query(universitySql, (err, result) => {
+          if (err || result?.length > 0) {
+            res.status(400).send("university details are already in use");
             return;
           }
-          console.log(avatar);
-          let userSql = `insert into user (username,password,type,name, avatar) values
-        ('${username}','${md5(password)}','user','${name}', '${avatar}')`;
 
-          pool.query(userSql, (err, result) => {
+          let sql = `insert into university (En_Name,Ar_Name,Location_O,Study_business,phone,Fax,
+            hour_no_week,hour_no_day,url, city_id, email) values
+            ('${EN_Name}','${AR_Name}','${Location_O}','${Study_buisness}','${phone}',
+            '${Fax}','${hour_no_week}','${hour_no_day}','${url}', '${city_id}', '${email}')`;
+          pool.query(sql, (err, result) => {
             if (err) {
               res
                 .status(400)
-                .send("error adding to user, try refreshing the page");
+                .send("error adding to university, try refreshing the page");
               return;
             }
-            let userSql = `select id from user where username='${username}'`;
+            let userSql = `insert into user (username,password,type,name,avatar) values
+            ('${username}','${md5(password)}','user','${name}', '${fileUrl}')`;
+
             pool.query(userSql, (err, result) => {
               if (err) {
-                res.status(400).send("username not found");
+                res.status(400).send(err.message);
                 return;
               }
-
-              let userId = result[0]["id"];
-
-              let universitySql = `select ID from university where email='${email}' and phone='${phone}' and url='${url}' and city_id='${city_id}' and EN_Name='${EN_Name}'`;
-              pool.query(universitySql, (err, result) => {
+              let userSql = `select id from user where username='${username}'`;
+              pool.query(userSql, (err, result) => {
                 if (err) {
-                  res.status(400).send("university not found");
+                  res.status(400).send("username not found");
                   return;
                 }
-                let universityId = result[0]["ID"];
 
-                let sql = `insert into representative (university_id, start_date, user_id) values('${universityId}','${new Date()
-                  .toISOString()
-                  .slice(0, 10)}', '${userId}')`;
-                pool.query(sql, (err, result) => {
+                let userId = result[0]["id"];
+
+                let universitySql = `select ID from university where email='${email}' and phone='${phone}' and url='${url}' and city_id='${city_id}' and EN_Name='${EN_Name}'`;
+                pool.query(universitySql, (err, result) => {
                   if (err) {
-                    res.status(400).send("Error adding the user");
+                    res.status(400).send("university not found");
                     return;
                   }
-                  res.status(200).send("Added User successfully");
-                  return;
+                  let universityId = result[0]["ID"];
+
+                  let sql = `insert into representative (university_id, start_date, user_id) values('${universityId}','${new Date()
+                    .toISOString()
+                    .slice(0, 10)}', '${userId}')`;
+                  pool.query(sql, (err, result) => {
+                    if (err) {
+                      res.status(400).send("Error adding the user");
+                      return;
+                    }
+                    res.status(200).send("Added User successfully");
+                    return;
+                  });
                 });
               });
             });
           });
         });
       });
-    });
+    }
   } catch (error) {
     console.log(error);
     res.status(400).send({ error });
@@ -223,17 +238,10 @@ router.post("/add-user", (req, res) => {
 router.get("/get-user", (req, res) => {
   try {
     const { userId } = req.query;
-    let sql = `SELECT id, name, username, status, type FROM user WHERE id = ${userId}`;
+    let sql = `SELECT id, name, username, status, type, avatar FROM user WHERE id = ${userId}`;
     let query = pool.query(sql, (error, result) => {
       if (error) throw error;
-      console.log(result);
-      let user = {
-        name: result[0]["name"],
-        username: result[0]["username"],
-        id: result[0]["id"],
-        status: result[0]["status"],
-        type: result[0]["type"],
-      };
+      let user = result[0];
       let sql = `SELECT university_id, start_date FROM representative WHERE user_id = ${userId}`;
       let query = pool.query(sql, (error, result) => {
         if (error) throw error;
@@ -244,20 +252,17 @@ router.get("/get-user", (req, res) => {
         let query = pool.query(sql, (error, result) => {
           if (error) throw error;
           let university = result[0];
-          console.log({
-            ...university,
-            ...user,
-            start_date,
-          });
           let sql = `SELECT * FROM offer WHERE university_id_src = ${university.ID} and status > 0`;
           let query = pool.query(sql, (error, result) => {
             if (error) throw error;
+            console.log(user);
             res.send({
               ...user,
               ...university,
               start_date: start_date,
               email: university.email,
               offers: result,
+              avatar: user.avatar,
             });
           });
         });
