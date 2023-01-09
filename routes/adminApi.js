@@ -156,7 +156,7 @@ router.post("/add-user", (req, res) => {
       const avatar = req.files.avatar;
       console.log(avatar);
       const fileName = `${Date.now()}_${avatar.name}`;
-      avatar.mv("./uploads/images", (err) => {
+      avatar.mv("./uploads/images/" + fileName, (err) => {
         if (err) {
           return res.status(500).send(err);
         }
@@ -430,7 +430,7 @@ router.post("/suspend-add-user", (req, res) => {
       console.log(avatar);
       const fileName = `${Date.now()}_${avatar.name}`;
       console.log(fileName);
-      avatar.mv("./uploads/images", (err) => {
+      avatar.mv("./uploads/images/" + fileName, (err) => {
         if (err) {
           console.error(err);
           return res.status(500).send(err);
@@ -474,6 +474,34 @@ router.post("/suspend-add-user", (req, res) => {
         });
       });
     }
+  } catch (error) {
+    return res.status(500).send(error.message);
+  }
+});
+
+router.post("/reactivate-user", (req, res) => {
+  try {
+    const { userId, id, university_id } = req.body;
+    const sql = `update user SET status = "suspend" where id = ${id}`;
+    pool.query(sql, (err, result) => {
+      if (err) return res.status(400).send({ error: "Error Suspending shsmo" });
+      const sql = `update representative set end_date = '${new Date()
+        .toISOString()
+        .slice(0, 10)}' where user_id = ${id}`;
+      pool.query(sql, (err, result) => {
+        if (err) return res.status(400).send({ error: "Can't update user" });
+        const sql = `update user SET status = "active" where id = ${userId}`;
+        pool.query(sql, (err, result) => {
+          if (err) return res.status(400).send({ error: "Can't insert user" });
+          const sql = `update representative set end_date = null where user_id = ${userId}`;
+          pool.query(sql, (err, result) => {
+            if (err)
+              return res.status(400).send({ error: "Can't insert relation" });
+            res.status(200).send("User added successfully");
+          });
+        });
+      });
+    });
   } catch (error) {
     return res.status(500).send(error.message);
   }
