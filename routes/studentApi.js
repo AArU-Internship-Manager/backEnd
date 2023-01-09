@@ -102,8 +102,36 @@ router.get("/get-all-data", (req, res) => {
         res
           .status(500)
           .send({ error: "An error occurred while processing your request." });
-      let users = result;
-      res.send({ users });
+      let students = result;
+      // console.log(students);
+      res.send(students);
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .send({ error: "An error occurred while processing your request." });
+  }
+});
+router.get("/get-student", (req, res) => {
+  try {
+    const { studentId } = req.query;
+    let sql = `SELECT * FROM student_e WHERE ID =${studentId}`;
+    let query = pool.query(sql, (error, result) => {
+      if (error) res.send(error.message);
+      let student = result[0];
+      let sql = `SELECT o.*
+      FROM offer o
+      JOIN requests r ON o.id = r.offer_id
+      WHERE r.student_id = ${studentId}`;
+      let query = pool.query(sql, (err, result) => {
+        if (err) res.send(err.message);
+        const offer = result[0];
+        res.send({
+          student: student,
+          offer: offer,
+        });
+      });
     });
   } catch (error) {
     console.error(error);

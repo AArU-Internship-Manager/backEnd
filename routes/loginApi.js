@@ -36,8 +36,9 @@ router.post("/", (req, res, next) => {
         { user, role, id },
         "khqes$30450#$%1234#900$!",
         (err, accessToken) => {
-          const sql1 = `SELECT ID  FROM university WHERE ID=(SELECT university_id from representative WHERE user_id=${id})`;
+          const sql1 = `SELECT *  FROM university WHERE ID=(SELECT university_id from representative WHERE user_id=${id})`;
           pool.query(sql1, (err, result) => {
+            const university = result[0];
             if (err || result.length === 0) {
               res.json({
                 id,
@@ -48,12 +49,15 @@ router.post("/", (req, res, next) => {
                 avatar,
               });
             } else {
-              university_id = result[0]["ID"];
               res.json({
                 id,
                 username,
                 ability,
-                university_id,
+                university_id: university.ID,
+                logo: university.logo,
+                EN_Name: university.EN_Name,
+                AR_Name: university.AR_Name,
+                email: university.email,
                 accessToken,
                 role,
                 avatar,

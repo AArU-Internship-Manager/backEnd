@@ -18,8 +18,9 @@ const pool = createPool({
   database: "swap-ar-uni",
   connectionLimit: "10",
 });
-// router.use(fetchToken);
-// router.use(verifyToken);
+
+router.use(fetchToken);
+router.use(verifyToken);
 
 router.post("/country", (req, res) => {
   const nameOfContry = req.body.contryName;
@@ -155,7 +156,7 @@ router.post("/add-user", (req, res) => {
       const avatar = req.files.avatar;
       console.log(avatar);
       const fileName = `${Date.now()}_${avatar.name}`;
-      avatar.mv(filePath, (err) => {
+      avatar.mv("./uploads/images", (err) => {
         if (err) {
           return res.status(500).send(err);
         }
@@ -164,7 +165,7 @@ router.post("/add-user", (req, res) => {
       let userSql = `select username from user where username='${username}'`;
       pool.query(userSql, (err, result) => {
         if (err || result.length > 0) {
-          res.status(400).send(err.message);
+          res.status(400).send(err?.message);
           return;
         }
 
@@ -191,7 +192,7 @@ router.post("/add-user", (req, res) => {
 
             pool.query(userSql, (err, result) => {
               if (err) {
-                res.status(400).send(err.message);
+                res.status(400).send(err?.message);
                 return;
               }
               let userSql = `select id from user where username='${username}'`;
@@ -237,36 +238,58 @@ router.post("/add-user", (req, res) => {
 
 router.get("/get-user", (req, res) => {
   try {
-    const { userId } = req.query;
-    let sql = `SELECT id, name, username, status, type, avatar FROM user WHERE id = ${userId}`;
+    const { universityId } = req.query;
+    let sql = `SELECT * FROM university WHERE ID = ${universityId}`;
     let query = pool.query(sql, (error, result) => {
-      if (error) throw error;
-      let user = result[0];
-      let sql = `SELECT university_id, start_date FROM representative WHERE user_id = ${userId}`;
+      if (error) {
+        res.status(400).send(error);
+        return;
+      }
+      let university = result[0];
+      let sql = `SELECT u.id, u.name, u.username, u.status, u.type, u.avatar FROM user u LEFT JOIN representative ON u.id = representative.user_id WHERE representative.university_id = ${universityId}`;
       let query = pool.query(sql, (error, result) => {
-        if (error) throw error;
-        let universityId = result[0].university_id;
-        let start_date = result[0].start_date;
-        // Get university data
-        let sql = `SELECT * FROM university WHERE id = ${universityId}`;
+        if (error) {
+          res.status(400).send(error);
+          return;
+        }
+        const activeUser = {
+          ...university,
+          ...result.filter((user) => user.status === "active")[0],
+        };
+        const users = result;
+        let sql = `SELECT * FROM offer WHERE university_id_src = ${universityId} and status > '0'`;
         let query = pool.query(sql, (error, result) => {
-          if (error) throw error;
-          let university = result[0];
-          let sql = `SELECT * FROM offer WHERE university_id_src = ${university.ID} and status > 0`;
-          let query = pool.query(sql, (error, result) => {
-            if (error) throw error;
-            console.log(user);
-            res.send({
-              ...user,
-              ...university,
-              start_date: start_date,
-              email: university.email,
-              offers: result,
-              avatar: user.avatar,
-            });
-          });
+          if (error) {
+            return res.status(400).send(error);
+          }
+          return res
+            .status(200)
+            .send({ university, users, activeUser, offers: result });
         });
       });
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .send({ error: "An error occurred while processing your request." });
+  }
+});
+
+router.get("/get-university-users", (req, res) => {
+  try {
+    const { universityId } = req.query;
+    let sql = `SELECT u.id, u.name, u.username, u.status, u.type, u.avatar
+    FROM users u
+    JOIN representative r ON u.id = r.user_id
+    JOIN university uni ON r.university_id = uni.id
+    GROUP BY uni.id
+    HAVING uni.id = ${universityId}`;
+    let query = pool.query(sql, (error, result) => {
+      if (error) res.send(error).status(400);
+      const active = result.filter((user) => user.status === "active");
+      const suspended = result.filter((user) => user.status === "suspend");
+      return { active, suspended };
     });
   } catch (error) {
     console.error(error);
@@ -279,25 +302,70 @@ router.get("/get-user", (req, res) => {
 router.get("/get-all-data", (req, res) => {
   try {
     // select all users aren't admin
-    let sql = `SELECT id, name, username FROM user WHERE type != 'admin'`;
+    let sql = `SELECT id, name, username, avatar, status FROM user WHERE type != 'admin'`;
     let query = pool.query(sql, (error, result) => {
       if (error) res.send(error).status(400);
       let users = result.map((user) => ({
         id: user.id,
         name: user.name,
         username: user.username,
+        avatar: user.avatar,
+        status: user.status,
       }));
       let sql = `SELECT * FROM representative WHERE university_id != 'null'`;
       let query = pool.query(sql, (error, result) => {
-        if (error) throw error;
+        if (error) res.send(error).status(400);
         let relations = result;
         // Get university data
         let sql = `SELECT * FROM university`;
         let query = pool.query(sql, (error, result) => {
-          if (error) throw error;
+          if (error) res.send(error).status(400);
           let universities = result;
           // let
-          res.send({ users, relations, universities });
+          const activeUsers = relations
+            ?.map((relation) => {
+              const user = users.find(
+                (user) =>
+                  user.id === relation.user_id && user.status === "active"
+              );
+              const university = universities.find(
+                (university) => university.ID === relation.university_id
+              );
+              if (university && user) {
+                return {
+                  ...user,
+                  ...university,
+                  startDate: relation.startDate,
+                  status: relation.status,
+                };
+              }
+              return null;
+            })
+            .filter((user) => user !== null);
+          const suspendedUsers = relations
+            ?.map((relation) => {
+              const user = users.find(
+                (user) =>
+                  user.id === relation.user_id && user.status === "suspend"
+              );
+              const university = universities.find(
+                (university) => university.ID === relation.university_id
+              );
+              if (university && user) {
+                return {
+                  ...user,
+                  ...university,
+                  startDate: relation.startDate,
+                  status: relation.status,
+                };
+              }
+              return null;
+            })
+            .filter((user) => user !== null);
+          res.send({
+            activeUsers,
+            suspendedUsers,
+          });
         });
       });
     });
@@ -309,22 +377,31 @@ router.get("/get-all-data", (req, res) => {
   }
 });
 
-router.post("/suspend-user", (req, res) => {
-  try {
-    const { userId } = req.body;
-    const sql = `update user set status = "suspend" where id = ${userId}`;
-    pool.query(sql, (err, result) => {
-      if (err) throw err;
-      const sql = `update representative set end_date = '${new Date().toISOString().slice(0, 10)}' where user_id = ${userId}`;
-      pool.query(sql, (err, result) => {
-        if (err) throw err;
-        res.status(200).send("User suspended successfully");
-      });
-    });
-  } catch (error) {
-    res.status(500).send({ error: "An error occurred while processing your request." });
-  }
-});
+// router.post("/suspend-user", (req, res) => {
+//   try {
+//     // console.log("Suspending", req);
+//     const { userId } = req.body;
+//     // console.log(userId);
+//     // check if representative table has a record of university id and this user is the last active user for this university
+//     const sql = `select * from representative where user_id = ${userId}`;
+//     pool.query(sql, (err , result) => {
+//       if (err) return res.send(err).status(400) ;
+//       if (result.length > 0) {
+//         const universityId = result[0].university_id;
+//         const sql = `select * from representative where university_id = ${universityId}`;
+//         pool.query(sql, (err, result) => {
+//           if (err) return res.send(err).status(400);
+//           if (result.length === 1) {
+
+//           }
+//         })
+//     })
+//   } catch (error) {
+//     res
+//       .status(500)
+//       .send({ error: "An error occurred while processing your request." });
+//   }
+// });
 
 router.post("/activate-user", (req, res) => {
   try {
@@ -339,45 +416,68 @@ router.post("/activate-user", (req, res) => {
       });
     });
   } catch (error) {
-    res.status(500).send({ error: "An error occurred while processing your request." });
+    res
+      .status(500)
+      .send({ error: "An error occurred while processing your request." });
   }
 });
 
 router.post("/suspend-add-user", (req, res) => {
   try {
-    const { userId, username, password, type, name, universityId } = req.body;
-    const sql = `select username from user where username = '${username}'`;
-    pool.query(sql, (err, result) => {
-      if (err || result.length > 0) {
-        return res.status(400).send({ error: "Username already exists" });
-      }
-      const sql = `update user set status = "suspend" where id = ${userId}`;
+    if (req.files) {
+      const { id, username, password, name, university_id } = req.body;
+      const avatar = req.files.avatar;
+      console.log(avatar);
+      const fileName = `${Date.now()}_${avatar.name}`;
+      console.log(fileName);
+      avatar.mv("./uploads/images", (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send(err);
+        }
+      });
+      const fileUrl = `http://localhost:3500/${fileName}`;
+      console.log(fileUrl);
+      const sql = `select username from user where username = '${username}'`;
       pool.query(sql, (err, result) => {
-        if (err) throw err;
-        const sql = `update representative set end_date = '${new Date().toISOString().slice(0, 10)}' where user_id = ${userId}`;
+        if (err || result.length > 0) {
+          return res.status(400).send({ error: "Username already exists" });
+        }
+        const sql = `update user set status = "suspend" where id = ${id}`;
         pool.query(sql, (err, result) => {
-          if (err) throw err;
-          const sql = `insert into user (username, password, type, name,status) values 
-          ('${username}', '${password}', '${type}', '${name}',"active")`;
+          if (err)
+            return res.status(400).send({ error: "Error Suspending shsmo" });
+          const sql = `update representative set end_date = '${new Date()
+            .toISOString()
+            .slice(0, 10)}' where user_id = ${id}`;
           pool.query(sql, (err, result) => {
-            if (err) throw err;
-            const sql = `insert into representative (user_id, university_id,start_date) values
-            (${result.insertId}, ${universityId}, '${new Date().toISOString().slice(0, 10)}')`;
+            if (err)
+              return res.status(400).send({ error: "Can't update user" });
+            const sql = `insert into user (username, password, type, name,status, avatar) values 
+            ('${username}', '${password}', 'user', '${name}',"active", '${fileUrl}')`;
             pool.query(sql, (err, result) => {
-              if (err) throw err;
-              res.status(200).send("User added successfully");
+              if (err)
+                return res.status(400).send({ error: "Can't insert user" });
+              const sql = `insert into representative (user_id, university_id, start_date) values
+              (${result.insertId}, ${university_id}, '${new Date()
+                .toISOString()
+                .slice(0, 10)}')`;
+              pool.query(sql, (err, result) => {
+                if (err)
+                  return res
+                    .status(400)
+                    .send({ error: "Can't insert relation" });
+                res.status(200).send("User added successfully");
+              });
             });
           });
         });
       });
-    });
+    }
   } catch (error) {
-    return res.status(500).send({ error: "An error occurred while processing your request." });
+    return res.status(500).send(error.message);
   }
 });
-
-
-
 
 function verifyToken(req, res, next) {
   jwt.verify(req.token, "khqes$30450#$%1234#900$!", (err, authData) => {
