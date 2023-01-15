@@ -21,7 +21,7 @@ router.get("/show_student", (req, res, next) => {
       res.send(err);
     } else {
       id = result[0]["university_id"];
-      const sql2 = `SELECT * FROM student_e WHERE university_id=${id}`;
+      const sql2 = `SELECT * FROM student WHERE university_id=${id}`;
       pool.query(sql2, (err, result) => {
         if (err) {
           res.status(404);
@@ -36,7 +36,7 @@ router.get("/show_student", (req, res, next) => {
 });
 
 router.get("/show_student/:id", (req, res, next) => {
-  const sql = `SELECT * FROM student_e WHERE id = ${req.params.id}`;
+  const sql = `SELECT * FROM student WHERE id = ${req.params.id}`;
   pool.query(sql, (err, result) => {
     if (err) {
       res.status(404);
@@ -77,7 +77,7 @@ router.post("/insert_student", (req, res, next) => {
         totalCreditHours,
         universityMajor,
       } = req.body;
-      const sql = `INSERT INTO student_e (name, city_id, university_id , college, universityMajor, birthPlace, gender, phone, email,  address, passportNumber, healthStatus, studyYearFinished, studyYears, fluencyInEnglish, totalCreditHours, passportExpiryDate, birthDate)
+      const sql = `INSERT INTO student (name, city_id, university_id , college, universityMajor, birthPlace, gender, phone, email,  address, passportNumber, healthStatus, studyYearFinished, studyYears, fluencyInEnglish, totalCreditHours, passportExpiryDate, birthDate)
              VALUES ("${name}", "${city_id}", ${university_id}, "${college}", "${universityMajor}","${birthPlace}","${gender}", "${phone}", "${email}","${address}", "${passportNumber}","${healthStatus}", "${studyYearFinished}", "${studyYears}", "${fluencyInEnglish}", ${totalCreditHours}, "${passportExpiryDate}", "${birthDate}")`;
       pool.query(sql, (err, result) => {
         console.log(req.body);
@@ -100,7 +100,7 @@ router.patch("/update_student", (req, res, next) => {
   const setString = Object.entries(updateObject)
     .map(([key, value]) => `${key} = "${value}"`)
     .join(", ");
-  const sql = `UPDATE student_e SET ${setString} WHERE ID= ${ID}`;
+  const sql = `UPDATE student SET ${setString} WHERE ID= ${ID}`;
   pool.query(sql, (err, result) => {
     console.log(result);
     if (err) {
@@ -119,7 +119,7 @@ router.get("/get-all-data", (req, res) => {
     let sql = `SELECT university_id FROM representative WHERE user_id = ?`;
     pool.query(sql, req.id, (error, result) => {
       console.log(result[0]["university_id"]);
-      let sql = `SELECT * FROM student_e WHERE university_id = ${result[0]["university_id"]}`;
+      let sql = `SELECT * FROM student WHERE university_id = ${result[0]["university_id"]}`;
       let query = pool.query(sql, (error, result) => {
         if (error)
           res.status(500).send({
@@ -140,14 +140,14 @@ router.get("/get-all-data", (req, res) => {
 router.get("/get-student", (req, res) => {
   try {
     const { studentId } = req.query;
-    let sql = `SELECT * FROM student_e WHERE ID = ?`;
+    let sql = `SELECT * FROM student WHERE ID = ?`;
     let query = pool.query(sql, studentId, (error, result) => {
       if (error) res.send(error.message);
       let student = result[0];
       let sql = `SELECT o.*, u.*
       FROM offer o
       JOIN requests r ON o.id = r.offer_id
-      JOIN student_e s ON r.student_id = s.ID
+      JOIN student s ON r.student_id = s.ID
       JOIN university u ON s.university_id = u.ID
       WHERE r.student_id = ?`;
       let query = pool.query(sql, studentId, (err, result) => {
