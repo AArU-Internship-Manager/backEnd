@@ -25,11 +25,13 @@ const adminRouter = require("./routes/adminApi");
 const studentRouter = require("./routes/studentApi");
 const offerRouter = require("./routes/offerApi");
 const accountApi = require("./routes/accountApi");
+const emailApi = require("./routes/emailApi");
 
 app.use("/login", loginRouter);
 app.use("/admin", adminRouter);
 app.use("/student", studentRouter);
 app.use("/offer", offerRouter);
 app.use("/account", accountApi);
+app.use("/email", emailApi);
 
 app.listen(port, () => {});

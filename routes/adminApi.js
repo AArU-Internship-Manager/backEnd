@@ -111,6 +111,7 @@ router.get("/universities", (req, res) => {
       res.status(404);
       res.send("error");
     } else {
+      const filtered = result.filter((item) => item.role === "user");
       res.json(result);
     }
   });
@@ -154,7 +155,6 @@ router.post("/add-user", (req, res) => {
   try {
     if (req.files) {
       const avatar = req.files.avatar;
-      console.log(avatar);
       const fileName = `${Date.now()}_${avatar.name}`;
       avatar.mv("./uploads/images/" + fileName, (err) => {
         if (err) {
@@ -168,14 +168,12 @@ router.post("/add-user", (req, res) => {
           res.status(400).send(err?.message);
           return;
         }
-
         let universitySql = `select ID from university where email='${email}' or phone='${phone}' or url='${url}' or (EN_Name='${EN_Name}' and AR_Name='${AR_Name}')`;
         pool.query(universitySql, (err, result) => {
           if (err || result?.length > 0) {
             res.status(400).send("university details are already in use");
             return;
           }
-
           let sql = `insert into university (En_Name,Ar_Name,Location_O,Study_business,phone,Fax,
             hour_no_week,hour_no_day,url, city_id, email) values
             ('${EN_Name}','${AR_Name}','${Location_O}','${Study_buisness}','${phone}',
@@ -376,32 +374,6 @@ router.get("/get-all-data", (req, res) => {
       .send({ error: "An error occurred while processing your request." });
   }
 });
-
-// router.post("/suspend-user", (req, res) => {
-//   try {
-//     // console.log("Suspending", req);
-//     const { userId } = req.body;
-//     // console.log(userId);
-//     // check if representative table has a record of university id and this user is the last active user for this university
-//     const sql = `select * from representative where user_id = ${userId}`;
-//     pool.query(sql, (err , result) => {
-//       if (err) return res.send(err).status(400) ;
-//       if (result.length > 0) {
-//         const universityId = result[0].university_id;
-//         const sql = `select * from representative where university_id = ${universityId}`;
-//         pool.query(sql, (err, result) => {
-//           if (err) return res.send(err).status(400);
-//           if (result.length === 1) {
-
-//           }
-//         })
-//     })
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .send({ error: "An error occurred while processing your request." });
-//   }
-// });
 
 router.post("/activate-user", (req, res) => {
   try {

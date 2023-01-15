@@ -37,6 +37,27 @@ router.put("/update_offer", (req, res, next) => {
   });
 });
 
+router.get("/get-offer", (req, res) => {
+  try {
+    const { id } = req.query;
+    const sql = `SELECT * FROM offer WHERE id=${id}`;
+    pool.query(sql, (err, result) => {
+      if (err) {
+        res.status(404);
+        res.send(err);
+      } else {
+        res.status(200);
+        res.json(result[0]);
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .send({ error: "An error occurred while processing your request." });
+  }
+});
+
 router.get("/show_offer/:id", (req, res, next) => {
   const sql = `SELECT * FROM offer WHERE id=${req.params.id}`;
   pool.query(sql, (err, result) => {
@@ -50,7 +71,7 @@ router.get("/show_offer/:id", (req, res, next) => {
   });
 });
 
-router.get("/show_offer", (req, res, next) => {
+router.get("/get-finished", (req, res, next) => {
   const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`;
   pool.query(sql1, (err, result) => {
     if (err) {
@@ -58,7 +79,30 @@ router.get("/show_offer", (req, res, next) => {
       res.send(err);
     } else {
       id = result[0]["university_id"];
-      const sql2 = `SELECT * FROM offer WHERE university_id_src=${id} or University_id_des=${id}`;
+      const sql2 = `SELECT * FROM offer WHERE (university_id_src=${id} or University_id_des=${id}) and status >= 5`;
+      pool.query(sql2, (err, result) => {
+        if (err) {
+          res.status(404);
+          res.send(err);
+        } else {
+          res.status(200);
+          res.json(result);
+        }
+      });
+    }
+  });
+});
+
+router.get("/show_offer", (req, res, next) => {
+  if (!req.id) return res.send(400);
+  const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`;
+  pool.query(sql1, (err, result) => {
+    if (err) {
+      res.status(404);
+      res.send(err);
+    } else {
+      id = result[0]["university_id"];
+      const sql2 = `SELECT * FROM offer WHERE (university_id_src=${id} or University_id_des=${id}) and status < 5`;
       pool.query(sql2, (err, result) => {
         if (err) {
           res.status(404);
@@ -130,7 +174,7 @@ router.post("/insert_offer", (req, res, next) => {
         stu_sex,
         other_requirments,
       } = req.body;
-
+      console.log(req.body);
       if (new Date(train_end_date) < new Date()) {
         return res.json({
           status: 400,
@@ -152,7 +196,7 @@ router.post("/insert_offer", (req, res, next) => {
       const sql = `INSERT INTO offer (offer_date, university_id_src,other_requirments, train_description, train_type,
                  train_length,train_start_date,train_end_date,support_amount,user_id,
                  train_aria, days_of_work, weekly_hours, daily_hours,college_name, branch_name,major_name, stu_level, stu_sex,
-                  work_field, status,meals_text, residence_text, transfer_text,inst_phone,inst_fax,inst_name,inst_address,trainer_name)
+                  work_field, status,meals_text, residence_text, transfer_text,inst_phone,inst_fax,inst_name,inst_address,trainer_name, place_of_work)
              VALUES ("${new Date()
                .toISOString()
                .slice(
@@ -165,7 +209,7 @@ router.post("/insert_offer", (req, res, next) => {
               "${meals ? meals_text : null}", "${
         residence ? residence_text : null
       }", "${transfer ? transfer_text : null}",
-              "${inst_phone}", "${inst_fax}", "${inst_name}", "${inst_address}", "${trainer_name}")`;
+              "${inst_phone}", "${inst_fax}", "${inst_name}", "${inst_address}", "${trainer_name}", "${place_of_work}")`;
 
       pool.query(sql, (err, result) => {
         if (err) {
@@ -177,6 +221,49 @@ router.post("/insert_offer", (req, res, next) => {
           return res.json({
             status: 200,
             message: "offer inserted successfully",
+          });
+        }
+      });
+    }
+  });
+});
+
+router.patch("/update_offer", (req, res, next) => {
+  const sql1 = `SELECT university_id FROM representative WHERE user_id=${req.id}`;
+  pool.query(sql1, (err, result) => {
+    if (err || result.length == 0) {
+      return res.json({
+        status: 400,
+        message: "you are not a representative",
+      });
+    } else {
+      const university_id_src = result[0]["university_id"];
+      const { id } = req.body;
+      console.log(req.body);
+      let setString = "";
+      Object.entries(req.body).forEach(([key, value]) => {
+        if (value !== null && value !== "") {
+          if (key === "meals_text" && !req.body.meals) return;
+          if (key === "residence_text" && !req.body.residence) return;
+          if (key === "transfer_text" && !req.body.transfer) return;
+          if (key === "offer_id") return;
+          setString += `${key} = "${value}",`;
+        }
+      });
+      setString = setString.slice(0, -1);
+      // console.log(setString);
+      const sql = `UPDATE offer SET ${setString} WHERE id = ${id}`;
+      pool.query(sql, (err, result) => {
+        console.log(err, result);
+        if (err) {
+          return res.json({
+            status: 400,
+            message: err,
+          });
+        } else {
+          return res.json({
+            status: 200,
+            message: "offer updated successfully",
           });
         }
       });
@@ -329,8 +416,9 @@ router.post("/reject-offer", (req, res, next) => {
       }
       const sql = `update offer set status="${
         +offerStatus - 1
-      }" where id=${offer_id}`;
+      }", University_id_des=NULL where id=${offer_id}`;
       pool.query(sql, (err, result) => {
+        console.log(err);
         if (err) {
           res.json({
             status: 404,
@@ -431,46 +519,19 @@ router.post("/add-student", (req, res, next) => {
   });
 });
 
-// const getStat = async (offer_id) => {
-//   const sql = `select status from offer where id=${offer_id}`;
-//   try {
-//     const result = pool.query(sql, async (err, result) => {
-//       console.log(2, err, result);
-//       if (err) {
-//         return err.message;
-//       } else {
-//         return result[0]["status"]
-//       }
-//     });
-//     return result[0]["status"];
-//   } catch (err) {
-//     console.log(3, err.message);
-//     return err.message;
-//   }
-// }
-// router.post("/xxx", async (req, res, next) => {
-//   const { offer_id } = req.body;
-//   const offerStatus = await getStat(offer_id);
-//   console.log(1, offerStatus);
-//   // offerStatus.then(res => {
-//   // //   return res.json({
-//   // //     status: 200,
-//   // //     message: offerStatus,
-//   // //   });
-//   // // })
-//   // // offerStatus.catch(err => {
-//   // //   return res.json({
-//   // //     status: 404,
-//   // //     message: err.message,
-//   // //   });
-//   // // })
-//   return res.json({
-//     status: 200,
-//     message: offerStatus,
-//   });
-// })
-
-// generate a function that returns a promise BY async and await have a statsu from offer table
+router.get("/get-university-data", (req, res, next) => {
+  const { universityId } = req.query;
+  const sql = `select * from university where id= "${universityId}"`;
+  pool.query(sql, (err, result) => {
+    if (err || result.length === 0) {
+      res.status(404);
+      res.send("not found");
+    } else {
+      const university = result[0];
+      res.status(200).send(university);
+    }
+  });
+});
 
 const getStatus = async (offer_id) => {
   const sql = `select status from offer where id=${offer_id}`;
@@ -484,23 +545,6 @@ const getStatus = async (offer_id) => {
     });
   });
 };
-
-// use the promise
-// router.post("/xxx", async (req, res, next) => {
-//   const { offer_id } = req.body;
-//   try {
-//     const offerStatus = await getStatus(offer_id);
-//     return res.json({
-//       status: 200,
-//       message: offerStatus,
-//     });
-//   } catch (err) {
-//     return res.json({
-//       status: 404,
-//       message: "offer not found",
-//     });
-//   }
-// });
 
 const getOfferDetails = async (offer_id) => {
   const sql = `select * from offer where id=${offer_id}`;
@@ -607,6 +651,7 @@ router.post("/duplicate", async (req, res, next) => {
 });
 
 function verifyToken(req, res, next) {
+  // console.log({ req });
   jwt.verify(req.token, "khqes$30450#$%1234#900$!", (err, authData) => {
     if (err) {
       res.sendStatus(403);

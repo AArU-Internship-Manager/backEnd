@@ -12,16 +12,19 @@ const pool = createPool({
 });
 const abilityUser = [
   { action: "read", subject: "ACL" },
-  { action: "read", subject: "Auth" },
+  { action: "read", subject: "user" },
 ];
 
-const abilityAdmin = [{ action: "manage", subject: "all" }];
+const abilityAdmin = [
+  { action: "manage", subject: "admin" },
+  { action: "read", subject: "user" },
+];
 
 router.post("/", (req, res, next) => {
   const name = req.body.Username;
   const password = md5(req.body.password);
   const user = req.body.Username;
-  const sql = `select type, username, id, avatar from user where Username= "${name}" and password="${password}"`;
+  const sql = `select type, name, username, id, avatar from user where Username= "${name}" and password="${password}"`;
   pool.query(sql, (err, result) => {
     if (err || result.length === 0) {
       res.status(404);
@@ -30,8 +33,9 @@ router.post("/", (req, res, next) => {
       const role = result[0]["type"].toLowerCase();
       const id = result[0]["id"];
       const username = result[0]["username"];
+      const name = result[0]["name"];
       const avatar = result[0]["avatar"];
-      const ability = role === "user" ? abilityAdmin : abilityUser;
+      const ability = role === "user" ? abilityUser : abilityAdmin;
       jwt.sign(
         { user, role, id },
         "khqes$30450#$%1234#900$!",
@@ -39,33 +43,69 @@ router.post("/", (req, res, next) => {
           const sql1 = `SELECT *  FROM university WHERE ID=(SELECT university_id from representative WHERE user_id=${id})`;
           pool.query(sql1, (err, result) => {
             const university = result[0];
-            if (err || result.length === 0) {
-              res.json({
-                id,
-                username,
-                ability,
-                accessToken,
-                role,
-                avatar,
-              });
-            } else {
-              res.json({
-                id,
-                username,
-                ability,
-                university_id: university.ID,
-                logo: university.logo,
-                EN_Name: university.EN_Name,
-                AR_Name: university.AR_Name,
-                email: university.email,
-                accessToken,
-                role,
-                avatar,
-              });
-            }
+            res.json({
+              id,
+              username,
+              ability,
+              university_id: university.ID,
+              logo: university.logo,
+              EN_Name: university.EN_Name,
+              AR_Name: university.AR_Name,
+              email: university.email,
+              accessToken,
+              role,
+              avatar,
+              name,
+            });
           });
         }
       );
+    }
+  });
+});
+
+router.get("/get-user-data", (req, res, next) => {
+  const { id } = req.query;
+  const sql = `select type, name, username, id, avatar from user where id= "${id}"`;
+  pool.query(sql, (err, result) => {
+    if (err || result.length === 0) {
+      res.status(404);
+      res.send("not found");
+    } else {
+      const role = result[0]["type"].toLowerCase();
+      const id = result[0]["id"];
+      const username = result[0]["username"];
+      const name = result[0]["name"];
+      const avatar = result[0]["avatar"];
+      const ability = role === "user" ? abilityUser : abilityUser;
+      const sql1 = `SELECT *  FROM university WHERE ID=(SELECT university_id from representative WHERE user_id=${id})`;
+      pool.query(sql1, (err, result) => {
+        const university = result[0];
+        if (err || result.length === 0) {
+          res.json({
+            id,
+            username,
+            ability,
+            role,
+            avatar,
+            name,
+          });
+        } else {
+          res.json({
+            id,
+            username,
+            ability,
+            university_id: university.ID,
+            logo: university.logo,
+            EN_Name: university.EN_Name,
+            AR_Name: university.AR_Name,
+            email: university.email,
+            role,
+            avatar,
+            name,
+          });
+        }
+      });
     }
   });
 });

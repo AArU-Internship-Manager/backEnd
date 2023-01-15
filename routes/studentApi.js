@@ -57,6 +57,7 @@ router.post("/insert_student", (req, res, next) => {
       res.send(err);
     } else {
       const university_id = result[0]["university_id"];
+      console.log(university_id);
       const {
         address,
         birthDate,
@@ -67,7 +68,7 @@ router.post("/insert_student", (req, res, next) => {
         gender,
         healthStatus,
         name,
-        nationality,
+        city_id,
         passportExpiryDate,
         passportNumber,
         phone,
@@ -76,11 +77,10 @@ router.post("/insert_student", (req, res, next) => {
         totalCreditHours,
         universityMajor,
       } = req.body;
-      const sql = `INSERT INTO student_e (name, nationality, university_id , college, universityMajor, birthPlace, gender, phone, email,  address, passportNumber, healthStatus, studyYearFinished, studyYears, fluencyInEnglish, totalCreditHours, passportExpiryDate, birthDate)
-             VALUES ("${name}", "${nationality}", ${university_id}, "${college}", "${universityMajor}","${birthPlace}","${gender}", "${phone}", "${email}","${address}", "${passportNumber}","${healthStatus}", "${studyYearFinished}", "${studyYears}", "${fluencyInEnglish}", ${totalCreditHours}, "${passportExpiryDate}", "${birthDate}")`;
+      const sql = `INSERT INTO student_e (name, city_id, university_id , college, universityMajor, birthPlace, gender, phone, email,  address, passportNumber, healthStatus, studyYearFinished, studyYears, fluencyInEnglish, totalCreditHours, passportExpiryDate, birthDate)
+             VALUES ("${name}", "${city_id}", ${university_id}, "${college}", "${universityMajor}","${birthPlace}","${gender}", "${phone}", "${email}","${address}", "${passportNumber}","${healthStatus}", "${studyYearFinished}", "${studyYears}", "${fluencyInEnglish}", ${totalCreditHours}, "${passportExpiryDate}", "${birthDate}")`;
       pool.query(sql, (err, result) => {
-        console.log(err);
-        console.log(sql);
+        console.log(req.body);
         if (err) {
           res.status(403);
           return res.json("this id is in use");
@@ -93,18 +93,42 @@ router.post("/insert_student", (req, res, next) => {
   });
 });
 
+router.patch("/update_student", (req, res, next) => {
+  const { ID } = req.body;
+  const updateObject = req.body;
+  console.log(req.body);
+  const setString = Object.entries(updateObject)
+    .map(([key, value]) => `${key} = "${value}"`)
+    .join(", ");
+  const sql = `UPDATE student_e SET ${setString} WHERE ID= ${ID}`;
+  pool.query(sql, (err, result) => {
+    console.log(result);
+    if (err) {
+      res.status(404);
+      res.send(err);
+    } else {
+      res.status(200);
+      res.send("student data updated successfully");
+    }
+  });
+});
+
 router.get("/get-all-data", (req, res) => {
   try {
     // select all users aren't admin
-    let sql = `SELECT * FROM student_e WHERE university_id = ${req.id}`;
-    let query = pool.query(sql, (error, result) => {
-      if (error)
-        res
-          .status(500)
-          .send({ error: "An error occurred while processing your request." });
-      let students = result;
-      // console.log(students);
-      res.send(students);
+    let sql = `SELECT university_id FROM representative WHERE user_id = ?`;
+    pool.query(sql, req.id, (error, result) => {
+      console.log(result[0]["university_id"]);
+      let sql = `SELECT * FROM student_e WHERE university_id = ${result[0]["university_id"]}`;
+      let query = pool.query(sql, (error, result) => {
+        if (error)
+          res.status(500).send({
+            error: "An error occurred while processing your request.",
+          });
+        let students = result;
+        // console.log(students);
+        res.send(students);
+      });
     });
   } catch (error) {
     console.error(error);
@@ -116,20 +140,28 @@ router.get("/get-all-data", (req, res) => {
 router.get("/get-student", (req, res) => {
   try {
     const { studentId } = req.query;
-    let sql = `SELECT * FROM student_e WHERE ID =${studentId}`;
-    let query = pool.query(sql, (error, result) => {
+    let sql = `SELECT * FROM student_e WHERE ID = ?`;
+    let query = pool.query(sql, studentId, (error, result) => {
       if (error) res.send(error.message);
       let student = result[0];
-      let sql = `SELECT o.*
+      let sql = `SELECT o.*, u.*
       FROM offer o
       JOIN requests r ON o.id = r.offer_id
-      WHERE r.student_id = ${studentId}`;
-      let query = pool.query(sql, (err, result) => {
+      JOIN student_e s ON r.student_id = s.ID
+      JOIN university u ON s.university_id = u.ID
+      WHERE r.student_id = ?`;
+      let query = pool.query(sql, studentId, (err, result) => {
         if (err) res.send(err.message);
         const offer = result[0];
+        console.log({
+          student: student,
+          offer: offer,
+          university: result[0],
+        });
         res.send({
           student: student,
           offer: offer,
+          university: result[0],
         });
       });
     });
