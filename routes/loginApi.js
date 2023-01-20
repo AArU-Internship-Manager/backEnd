@@ -77,19 +77,12 @@ router.get("/get-user-data", (req, res, next) => {
       const username = result[0]["username"];
       const name = result[0]["name"];
       const avatar = result[0]["avatar"];
-      const ability = role === "user" ? abilityUser : abilityUser;
+      const ability = role === "user" ? abilityUser : abilityAdmin;
       const sql1 = `SELECT *  FROM university WHERE ID=(SELECT university_id from representative WHERE user_id=${id})`;
       pool.query(sql1, (err, result) => {
         const university = result[0];
         if (err || result.length === 0) {
-          res.json({
-            id,
-            username,
-            ability,
-            role,
-            avatar,
-            name,
-          });
+          res.status(404);
         } else {
           res.json({
             id,

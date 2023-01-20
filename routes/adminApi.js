@@ -229,7 +229,6 @@ router.post("/add-user", (req, res) => {
       });
     }
   } catch (error) {
-    console.log(error);
     res.status(400).send({ error });
   }
 });
@@ -398,18 +397,6 @@ router.post("/suspend-add-user", (req, res) => {
   try {
     if (req.files) {
       const { id, username, password, name, university_id } = req.body;
-      const avatar = req.files.avatar;
-      console.log(avatar);
-      const fileName = `${Date.now()}_${avatar.name}`;
-      console.log(fileName);
-      avatar.mv("./uploads/images/" + fileName, (err) => {
-        if (err) {
-          console.error(err);
-          return res.status(500).send(err);
-        }
-      });
-      const fileUrl = `http://localhost:3500/${fileName}`;
-      console.log(fileUrl);
       const sql = `select username from user where username = '${username}'`;
       pool.query(sql, (err, result) => {
         if (err || result.length > 0) {
@@ -425,6 +412,14 @@ router.post("/suspend-add-user", (req, res) => {
           pool.query(sql, (err, result) => {
             if (err)
               return res.status(400).send({ error: "Can't update user" });
+            const avatar = req.files.avatar;
+            const fileName = `${Date.now()}_${avatar.name}`;
+            avatar.mv("./uploads/images/" + fileName, (err) => {
+              if (err) {
+                return res.status(500).send(err);
+              }
+            });
+            const fileUrl = `http://localhost:3500/${fileName}`;
             const sql = `insert into user (username, password, type, name,status, avatar) values 
             ('${username}', '${password}', 'user', '${name}',"active", '${fileUrl}')`;
             pool.query(sql, (err, result) => {

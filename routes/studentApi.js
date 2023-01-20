@@ -96,13 +96,11 @@ router.post("/insert_student", (req, res, next) => {
 router.patch("/update_student", (req, res, next) => {
   const { ID } = req.body;
   const updateObject = req.body;
-  console.log(req.body);
   const setString = Object.entries(updateObject)
     .map(([key, value]) => `${key} = "${value}"`)
     .join(", ");
   const sql = `UPDATE student SET ${setString} WHERE ID= ${ID}`;
   pool.query(sql, (err, result) => {
-    console.log(result);
     if (err) {
       res.status(404);
       res.send(err);
@@ -118,7 +116,6 @@ router.get("/get-all-data", (req, res) => {
     // select all users aren't admin
     let sql = `SELECT university_id FROM representative WHERE user_id = ?`;
     pool.query(sql, req.id, (error, result) => {
-      console.log(result[0]["university_id"]);
       let sql = `SELECT * FROM student WHERE university_id = ${result[0]["university_id"]}`;
       let query = pool.query(sql, (error, result) => {
         if (error)
@@ -126,7 +123,6 @@ router.get("/get-all-data", (req, res) => {
             error: "An error occurred while processing your request.",
           });
         let students = result;
-        // console.log(students);
         res.send(students);
       });
     });
@@ -137,31 +133,53 @@ router.get("/get-all-data", (req, res) => {
       .send({ error: "An error occurred while processing your request." });
   }
 });
+router.get("/request-data", (req, res) => {
+  try {
+    const { universityId } = req.query;
+    const sql = `SELECT r.* 
+    FROM requests r
+    JOIN student s 
+    ON r.student_id = s.ID
+    JOIN offer o
+    ON r.offer_id = o.id 
+    WHERE s.university_id = "${universityId}"
+    OR o.university_id_src = "${universityId}"
+    `;
+    pool.query(sql, (err, result) => {
+      if (err) {
+        res.status(404);
+        res.send("not found");
+      } else {
+        const requests = result;
+        res.status(200).send(requests);
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .send({ error: "An error occurred while processing your request." });
+  }
+});
+
 router.get("/get-student", (req, res) => {
   try {
     const { studentId } = req.query;
     let sql = `SELECT * FROM student WHERE ID = ?`;
     let query = pool.query(sql, studentId, (error, result) => {
-      if (error) res.send(error.message);
+      if (error) return res.send(error.message);
       let student = result[0];
-      let sql = `SELECT o.*, u.*
+      let sql = `SELECT o.*
       FROM offer o
       JOIN requests r ON o.id = r.offer_id
-      JOIN student s ON r.student_id = s.ID
-      JOIN university u ON s.university_id = u.ID
       WHERE r.student_id = ?`;
       let query = pool.query(sql, studentId, (err, result) => {
-        if (err) res.send(err.message);
+        if (err) return res.send(err.message);
         const offer = result[0];
-        console.log({
-          student: student,
-          offer: offer,
-          university: result[0],
-        });
         res.send({
           student: student,
           offer: offer,
-          university: result[0],
+          // university: result[0],
         });
       });
     });

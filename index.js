@@ -4,6 +4,7 @@ const app = express();
 const port = 3500;
 const upload = require("express-fileupload");
 const path = require("path");
+require("./routes/jobs/cron");
 
 app.use(cors());
 app.use(upload());
