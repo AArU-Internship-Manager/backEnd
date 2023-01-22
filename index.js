@@ -1,10 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
-const port = 3500;
+const port = process.env.PORT || 3500;
 const upload = require("express-fileupload");
 const path = require("path");
 require("./routes/jobs/cron");
+require("./routes/socket/socket");
 
 app.use(cors());
 app.use(upload());
@@ -26,7 +27,8 @@ const adminRouter = require("./routes/adminApi");
 const studentRouter = require("./routes/studentApi");
 const offerRouter = require("./routes/offerApi");
 const accountApi = require("./routes/accountApi");
-const emailApi = require("./routes/emailApi");
+const emailApi = require("./routes/apps/email/emailApi");
+const { router: notifications } = require("./routes/notifications");
 
 app.use("/login", loginRouter);
 app.use("/admin", adminRouter);
@@ -34,5 +36,6 @@ app.use("/student", studentRouter);
 app.use("/offer", offerRouter);
 app.use("/account", accountApi);
 app.use("/email", emailApi);
+app.use("/notifications", notifications);
 
 app.listen(port, () => {});
