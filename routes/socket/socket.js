@@ -7,7 +7,7 @@ const io = new Server({
   },
 });
 
-const PORT = process.env.PORT || 3200;
+const PORT = process.env.PORT || 5000;
 
 io.listen(PORT);
 
@@ -40,10 +40,25 @@ io.on("connection", (socket) => {
     console.log({ socketId: socket.id, socketIdToUserId });
   });
 
+  socket.on("new-notification", (data) => {
+    const { user } = data;
+    const socketId = findSocketId(user);
+    io.to(socketId).emit("send-notification", data);
+  });
+
+  socket.on("new-notification-update", (data) => {
+    console.log(data);
+    const { user } = data;
+    const socketId = findSocketId(user);
+    io.to(socketId).emit("send-notification", data);
+    io.to(socketId).emit("update-data", data);
+  });
+
   socket.on("disconnect", () => {
     deleteSocketId(socket.id);
   });
 });
+
 module.exports = {
   io,
   socketIdToUserId,

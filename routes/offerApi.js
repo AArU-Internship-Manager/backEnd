@@ -5,7 +5,6 @@ const { storeNotification } = require("./notifications");
 var jwt = require("jsonwebtoken");
 const { request } = require("express");
 const moment = require("moment");
-const { io, findSocketId, socketIdToUserId } = require("./socket/socket");
 
 const pool = createPool({
   host: "localhost",
@@ -240,33 +239,9 @@ router.patch("/update_offer", (req, res, next) => {
             message: err,
           });
         } else {
-          const sql1 = `SELECT r.user_id FROM representative r JOIN offer o ON r.university_id=o.University_id_des WHERE o.id=${id} AND r.end_date IS NULL`;
-          pool.query(sql1, (err, result) => {
-            if (err) {
-              console.log(err);
-              return res.json({
-                status: 400,
-                message: err,
-              });
-            } else {
-              const socket = findSocketId(result[0].user_id);
-              console.log(socket, result);
-              if (socket) {
-                io.to(socket).emit("update_offer", { id });
-              } else {
-                storeNotification({
-                  user_id: result[0].user_id,
-                  title: "Offer Updated",
-                  body: "Offer has been updated",
-                  type: "warning",
-                  offer_id: id,
-                });
-              }
-              return res.json({
-                status: 200,
-                message: "offer updated successfully",
-              });
-            }
+          return res.json({
+            status: 200,
+            message: "offer updated successfully",
           });
         }
       });
@@ -344,32 +319,9 @@ router.post("/send-offer", (req, res, next) => {
         message: "error",
       });
     }
-    const sql1 = `SELECT r.user_id FROM representative r JOIN offer o ON r.university_id=o.University_id_des WHERE o.id=${offer_id} AND r.end_date IS NULL`;
-    pool.query(sql1, (err, result) => {
-      if (err) {
-        console.log(err);
-        return res.json({
-          status: 400,
-          message: err,
-        });
-      } else {
-        const socket = findSocketId(result[0].user_id);
-        if (socket) {
-          io.to(socket).emit("send-offer", { id: offer_id });
-        } else {
-          storeNotification({
-            user_id: result[0].user_id,
-            title: "Offer Updated",
-            body: "Offer has been updated",
-            type: "warning",
-            offer_id: id,
-          });
-        }
-        return res.json({
-          status: 200,
-          message: "offer updated successfully",
-        });
-      }
+    return res.json({
+      status: 200,
+      message: "offer updated successfully",
     });
   });
 });
@@ -384,94 +336,31 @@ router.post("/accept-offer", (req, res, next) => {
         message: "error",
       });
     }
-    const sql1 = `SELECT r.user_id FROM representative r JOIN offer o ON r.university_id=o.university_id_src WHERE o.id=${offer_id} AND r.end_date IS NULL`;
-    pool.query(sql1, (err, result) => {
-      if (err) {
-        console.log(err);
-        return res.json({
-          status: 400,
-          message: err,
-        });
-      } else {
-        const socket = findSocketId(result[0].user_id);
-        if (socket) {
-          io.to(socket).emit("accept-offer", { id: offer_id });
-        } else {
-          storeNotification({
-            user_id: result[0].user_id,
-            title: "Offer Accepted",
-            body: "Offer has been accepted",
-            type: "success",
-            offer_id: id,
-          });
-        }
-        return res.json({
-          status: 200,
-          message: "offer updated successfully",
-        });
-      }
+    return res.json({
+      status: 200,
+      message: "offer updated successfully",
     });
   });
 });
 
 router.post("/reject-offer", (req, res, next) => {
   const { offer_id } = req.body;
-  const sql = `select status from offer where id=${offer_id}`;
-  const retrieveOffer = pool.query(sql, (err, result) => {
+
+  const sql = `update offer set status=status-1, University_id_des=NULL where id=${offer_id}`;
+  pool.query(sql, (err, result) => {
     if (err) {
-      return res.json({
+      res.json({
         status: 404,
-        message: err.message,
-      });
-    } else {
-      const offerStatus = result[0]["status"];
-      if (offerStatus === "not found") {
-        return res.json({
-          status: 404,
-          message: "offer not found",
-        });
-      }
-      const sql = `update offer set status="${
-        +offerStatus - 1
-      }", University_id_des=NULL where id=${offer_id}`;
-      pool.query(sql, (err, result) => {
-        if (err) {
-          res.json({
-            status: 404,
-            message: "error",
-          });
-        }
-      });
-      const sql1 = `SELECT r.user_id FROM representative r JOIN offer o ON r.university_id=o.university_id_src WHERE o.id=${offer_id} AND r.end_date IS NULL`;
-      pool.query(sql1, (err, result) => {
-        if (err) {
-          console.log(err);
-          return res.json({
-            status: 400,
-            message: err,
-          });
-        } else {
-          const socket = findSocketId(result[0].user_id);
-          if (socket) {
-            io.to(socket).emit("reject-offer", { id: offer_id });
-          } else {
-            storeNotification({
-              user_id: result[0].user_id,
-              title: "Offer Rejected",
-              body: "Offer has been rejected",
-              type: "danger",
-              offer_id: id,
-            });
-          }
-          return res.json({
-            status: 200,
-            message: "offer updated successfully",
-          });
-        }
+        message: "error",
       });
     }
+    return res.json({
+      status: 200,
+      message: "offer updated successfully",
+    });
   });
 });
+
 router.post("/reject-submission", (req, res, next) => {
   const { offer_id } = req.body;
 
@@ -483,32 +372,9 @@ router.post("/reject-submission", (req, res, next) => {
         message: "error",
       });
     }
-    const sql1 = `SELECT r.user_id FROM representative r JOIN offer o ON r.university_id=o.University_id_des WHERE o.id=${offer_id} AND r.end_date IS NULL`;
-    pool.query(sql1, (err, result) => {
-      if (err) {
-        console.log(err);
-        return res.json({
-          status: 400,
-          message: err,
-        });
-      } else {
-        const socket = findSocketId(result[0].user_id);
-        if (socket) {
-          io.to(socket).emit("reject-offer", { id: offer_id });
-        } else {
-          storeNotification({
-            user_id: result[0].user_id,
-            title: "Offer Rejected",
-            body: "Offer has been rejected",
-            type: "danger",
-            offer_id: id,
-          });
-        }
-        return res.json({
-          status: 200,
-          message: "offer updated successfully",
-        });
-      }
+    return res.json({
+      status: 200,
+      message: "offer updated successfully",
     });
   });
 });
@@ -538,10 +404,10 @@ router.post("/delete-offer", (req, res, next) => {
             message: "error",
           });
         }
-      });
-      return res.json({
-        status: 200,
-        message: "success",
+        return res.json({
+          status: 200,
+          message: "success",
+        });
       });
     }
   });
@@ -567,33 +433,9 @@ router.post("/add-student", (req, res, next) => {
             message: "error",
           });
         } else {
-          const sql = `SELECT r.user_id, u.*, o.id FROM offer o JOIN representative r ON o.university_id_src = r.university_id
-          JOIN university u ON o.university_id_src = u.id
-          WHERE o.id = ${offer_id} and r.end_date is null`;
-          pool.query(sql, (err, result) => {
-            if (err) {
-              console.log(err);
-              return res.json({
-                status: 404,
-                message: "error",
-              });
-            }
-            const socket = findSocketId(result[0].user_id);
-            if (socket) {
-              io.to(socket).emit("studentAdded", result[0]);
-            } else {
-              storeNotification({
-                user_id: result[0].user_id,
-                title: "Student Added",
-                body: "Student has been added to your offer",
-                type: "success",
-                offer_id: offer_id,
-              });
-            }
-            return res.json({
-              status: 200,
-              message: "success",
-            });
+          return res.json({
+            status: 200,
+            message: "offer updated successfully",
           });
         }
       });
@@ -621,32 +463,9 @@ router.post("/remove-student", (req, res, next) => {
           message: err.message,
         });
       }
-      const sql1 = `SELECT r.user_id FROM representative r JOIN offer o ON r.university_id=o.university_id_src WHERE o.id=${offer_id} AND r.end_date IS NULL`;
-      pool.query(sql1, (err, result) => {
-        if (err) {
-          console.log(err);
-          return res.json({
-            status: 400,
-            message: err,
-          });
-        } else {
-          const socket = findSocketId(result[0].user_id);
-          if (socket) {
-            io.to(socket).emit("remove-student", { id: offer_id });
-          } else {
-            storeNotification({
-              user_id: result[0].user_id,
-              title: "Student Removed",
-              body: "Student has been removed from your offer",
-              type: "danger",
-              offer_id: offer_id,
-            });
-          }
-          return res.json({
-            status: 200,
-            message: "offer updated successfully",
-          });
-        }
+      return res.json({
+        status: 200,
+        message: "offer updated successfully",
       });
     });
   });
@@ -741,6 +560,7 @@ router.put("/update-request", (req, res) => {
     sql += `${key} = '${data.values[key]}',`;
   });
   sql += `status=1 WHERE offer_id = ${data.offer_id}`;
+  console.log(sql);
   pool.query(sql, (err, result) => {
     if (err) {
       return res.json({
@@ -748,32 +568,9 @@ router.put("/update-request", (req, res) => {
         message: err.message,
       });
     }
-    const sql1 = `SELECT r.user_id FROM representative r JOIN offer o ON r.university_id=o.university_id_src WHERE o.id=${data.offer_id} AND r.end_date IS NULL`;
-    pool.query(sql1, (err, result) => {
-      if (err) {
-        console.log(err);
-        return res.json({
-          status: 400,
-          message: err,
-        });
-      } else {
-        const socket = findSocketId(result[0].user_id);
-        if (socket) {
-          io.to(socket).emit("update-request", { id: data.offer_id });
-        } else {
-          storeNotification({
-            user_id: result[0].user_id,
-            title: "Request Updated",
-            body: "Request has been updated",
-            type: "info",
-            offer_id: data.offer_id,
-          });
-        }
-        return res.json({
-          status: 200,
-          message: "offer updated successfully",
-        });
-      }
+    return res.json({
+      status: 200,
+      message: "offer updated successfully",
     });
   });
 });
@@ -788,33 +585,9 @@ router.put("/submit-request", (req, res) => {
         message: err.message,
       });
     }
-    // console.log(result);
-    const sql1 = `SELECT r.user_id FROM representative r JOIN offer o ON r.university_id=o.University_id_des WHERE o.id=${data.offer_id} AND r.end_date IS NULL`;
-    pool.query(sql1, (err, result) => {
-      if (err) {
-        console.log(err);
-        return res.json({
-          status: 400,
-          message: err,
-        });
-      } else {
-        const socket = findSocketId(result[0].user_id);
-        if (socket) {
-          io.to(socket).emit("submit-request", { id: data.offer_id });
-        } else {
-          storeNotification({
-            user_id: result[0].user_id,
-            title: "Request Submitted",
-            body: "Request has been submitted",
-            type: "info",
-            offer_id: data.offer_id,
-          });
-        }
-        return res.json({
-          status: 200,
-          message: "offer updated successfully",
-        });
-      }
+    return res.json({
+      status: 200,
+      message: "offer updated successfully",
     });
   });
 });
@@ -832,32 +605,9 @@ router.put("/accept-request", (req, res) => {
         message: err.message,
       });
     }
-    const sql1 = `SELECT r.user_id FROM representative r JOIN offer o ON r.university_id=o.University_id_des WHERE o.id=${data.offer_id} AND r.end_date IS NULL`;
-    pool.query(sql1, (err, result) => {
-      if (err) {
-        console.log(err);
-        return res.json({
-          status: 400,
-          message: err,
-        });
-      } else {
-        const socket = findSocketId(result[0].user_id);
-        if (socket) {
-          io.to(socket).emit("accept-request", { id: data.offer_id });
-        } else {
-          storeNotification({
-            user_id: result[0].user_id,
-            title: "Request Accepted",
-            body: "Request has been accepted",
-            type: "info",
-            offer_id: data.offer_id,
-          });
-        }
-        return res.json({
-          status: 200,
-          message: "offer updated successfully",
-        });
-      }
+    return res.json({
+      status: 200,
+      message: "offer updated successfully",
     });
   });
 });

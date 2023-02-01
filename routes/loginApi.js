@@ -2,13 +2,7 @@ const express = require("express");
 const md5 = require("md5");
 const router = express.Router();
 const { createPool } = require("mysql");
-const {
-  socketIdToUserId,
-  findUser,
-  deleteSocket,
-  deleteSocketId,
-  addSocket,
-} = require("./socket/socket");
+
 var jwt = require("jsonwebtoken");
 const pool = createPool({
   host: "localhost",
@@ -120,5 +114,4 @@ router.get("/get-user-data", (req, res, next) => {
   });
 });
 
-module.exports = socketIdToUserId;
 module.exports = router;
