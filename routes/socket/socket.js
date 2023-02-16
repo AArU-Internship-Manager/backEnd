@@ -1,5 +1,6 @@
 const socketIdToUserId = {};
 const { Server } = require("socket.io");
+const { storeNotification } = require("../notifications");
 
 const io = new Server({
   cors: {
@@ -44,10 +45,11 @@ io.on("connection", (socket) => {
     const { user } = data;
     const socketId = findSocketId(user);
     io.to(socketId).emit("send-notification", data);
+    storeNotification(data);
   });
 
   socket.on("new-notification-update", (data) => {
-    console.log(data);
+    storeNotification(data);
     const { user } = data;
     const socketId = findSocketId(user);
     io.to(socketId).emit("send-notification", data);

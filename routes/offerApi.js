@@ -768,7 +768,6 @@ router.post("/insert_evaluation", (req, res, next) => {
 
 router.post("/insert_feedback", (req, res, next) => {
   const { values: data, requestId, offerId } = req.body;
-  // console.log(data);
   const issueDate = new Date().toISOString().slice(0, 10);
   const keys = Object.keys(data).concat("request_id").concat("issueDate");
   const values = Object.values(data).concat(requestId).concat(issueDate);
