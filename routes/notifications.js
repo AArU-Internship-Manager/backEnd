@@ -3,13 +3,8 @@ const router = express.Router();
 const { createPool } = require("mysql");
 var jwt = require("jsonwebtoken");
 const md5 = require("md5");
-const pool = createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "swap-ar-uni",
-  connectionLimit: "10",
-});
+const DB_CONNECTION = require("../db");
+const pool = createPool(DB_CONNECTION);
 
 router.use(fetchToken);
 router.use(verifyToken);

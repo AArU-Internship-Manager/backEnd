@@ -4,13 +4,9 @@ const router = express.Router();
 const { createPool } = require("mysql");
 
 var jwt = require("jsonwebtoken");
-const pool = createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "swap-ar-uni",
-  connectionLimit: "10",
-});
+const DB_CONNECTION = require("../db");
+const pool = createPool(DB_CONNECTION);
+
 const abilityUser = [
   { action: "read", subject: "ACL" },
   { action: "read", subject: "user" },
@@ -25,7 +21,6 @@ router.post("/", (req, res, next) => {
   const name = req.body.Username;
   const password = md5(req.body.password);
   const user = req.body.Username;
-  console.log(req.body);
   const sql = `select type, name, username, id, avatar from user where Username= "${name}" and password="${password}"`;
   pool.query(sql, (err, result) => {
     if (err || result.length === 0) {
@@ -33,6 +28,7 @@ router.post("/", (req, res, next) => {
       res.send("not found");
       console.log(err);
     } else {
+      console.log(result);
       const role = result[0]["type"].toLowerCase();
       const id = result[0]["id"];
       const username = result[0]["username"];
@@ -90,10 +86,10 @@ router.get("/get-user-data", (req, res, next) => {
       const ability = role === "user" ? abilityUser : abilityAdmin;
       const sql1 = `SELECT *  FROM university WHERE ID=(SELECT university_id from representative WHERE user_id=${id})`;
       pool.query(sql1, (err, result) => {
-        const university = result[0];
         if (err || result.length === 0) {
           res.status(404);
         } else {
+          const university = result[0];
           // set socket id to user id
           res.json({
             id,

@@ -6,10 +6,11 @@ const mysql = require("mysql2");
 const router = express.Router();
 
 const connection = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "swap-ar-uni",
+  host: "b0v0jmvlsa1lktb7d6ed-mysql.services.clever-cloud.com",
+  user: "u4eyummvyv6uncwr",
+  password: "8VpsSHue0bcHsFXRLPhc",
+  database: "b0v0jmvlsa1lktb7d6ed",
+  connectionLimit: "10",
 });
 router.use(fetchToken);
 router.use(verifyToken);

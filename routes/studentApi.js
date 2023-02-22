@@ -2,13 +2,8 @@ const express = require("express");
 const router = express.Router();
 const { createPool } = require("mysql");
 var jwt = require("jsonwebtoken");
-const pool = createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "swap-ar-uni",
-  connectionLimit: "10",
-});
+const DB_CONNECTION = require("../db");
+const pool = createPool(DB_CONNECTION);
 
 router.use(fetchToken);
 router.use(verifyToken);
@@ -116,6 +111,11 @@ router.get("/get-all-data", (req, res) => {
     // select all users aren't admin
     let sql = `SELECT university_id FROM representative WHERE user_id = ?`;
     pool.query(sql, req.id, (error, result) => {
+      if (error) {
+        res.status(500).send({
+          error: "An error occurred while processing your request.",
+        });
+      }
       let sql = `SELECT * FROM student WHERE university_id = ${result[0]["university_id"]}`;
       let query = pool.query(sql, (error, result) => {
         if (error)

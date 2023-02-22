@@ -11,13 +11,8 @@ const { createPool } = require("mysql");
 // });
 
 const jwt = require("jsonwebtoken");
-const pool = createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "swap-ar-uni",
-  connectionLimit: "10",
-});
+const DB_CONNECTION = require("../db");
+const pool = createPool(DB_CONNECTION);
 
 router.use(fetchToken);
 router.use(verifyToken);
@@ -302,7 +297,7 @@ router.get("/get-all-data", (req, res) => {
     let sql = `SELECT id, name, username, avatar, status FROM user WHERE type != 'admin'`;
     let query = pool.query(sql, (error, result) => {
       if (error) res.send(error).status(400);
-      let users = result.map((user) => ({
+      let users = result?.map((user) => ({
         id: user.id,
         name: user.name,
         username: user.username,
@@ -311,12 +306,12 @@ router.get("/get-all-data", (req, res) => {
       }));
       let sql = `SELECT * FROM representative WHERE university_id != 'null'`;
       let query = pool.query(sql, (error, result) => {
-        if (error) res.send(error).status(400);
+        if (error) return res.send(error).status(400);
         let relations = result;
         // Get university data
         let sql = `SELECT * FROM university`;
         let query = pool.query(sql, (error, result) => {
-          if (error) res.send(error).status(400);
+          if (error) return res.send(error).status(400);
           let universities = result;
           // let
           const activeUsers = relations
@@ -359,7 +354,7 @@ router.get("/get-all-data", (req, res) => {
               return null;
             })
             .filter((user) => user !== null);
-          res.send({
+          return res.send({
             activeUsers,
             suspendedUsers,
           });

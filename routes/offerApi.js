@@ -5,14 +5,9 @@ const { storeNotification } = require("./notifications");
 var jwt = require("jsonwebtoken");
 const { request } = require("express");
 const moment = require("moment");
+const DB_CONNECTION = require("../db");
 
-const pool = createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "swap-ar-uni",
-  connectionLimit: "10",
-});
+const pool = createPool(DB_CONNECTION);
 
 router.use(fetchToken);
 router.use(verifyToken);
